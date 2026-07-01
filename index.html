@@ -99,16 +99,11 @@ tr:hover td{background:rgba(0,102,204,0.025);}
 @media (max-width: 1024px) {.kpi-row{grid-template-columns:repeat(3,1fr);}.g3{grid-template-columns:1fr 1fr;}}
 @media (max-width: 700px) {.g2,.g3{grid-template-columns:1fr;}.kpi-row{grid-template-columns:1fr 1fr;}.topbar-nav{display:none;}}
 </style>
+<style>@keyframes spin{to{transform:rotate(360deg);}}</style>
 </head>
 <body>
-
-<div id="loading" style="position:fixed;inset:0;background:rgba(255,255,255,0.95);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
-  <div style="width:32px;height:32px;border:3px solid #e0e0e0;border-top-color:#0066cc;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
-  <div style="font-size:14px;color:#7a7a7a;">구글시트에서 최신 데이터를 불러오는 중...</div>
-</div>
-<style>@keyframes spin{to{transform:rotate(360deg);}}</style>
-<div id="error-area"></div>
-<div id="app">
+<div id="loading-overlay" style="position:fixed;inset:0;background:rgba(255,255,255,0.96);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;"><div style="width:32px;height:32px;border:3px solid #e0e0e0;border-top-color:#0066cc;border-radius:50%;animation:spin 0.8s linear infinite;"></div><div style="font-size:14px;color:#7a7a7a;">구글시트에서 최신 데이터를 불러오는 중...</div></div>
+<div id="error-overlay" style="display:none;position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:9998;background:#fff5f5;border:1px solid #ffc9c9;border-radius:12px;padding:20px 28px;color:#c92a2a;max-width:600px;width:90%;"></div>
 <div class="topbar">
   <div class="topbar-left">
     <div class="logo">D</div>
@@ -120,7 +115,7 @@ tr:hover td{background:rgba(0,102,204,0.025);}
     <a class="tnav" href="#s3">목표달성률</a>
     <a class="tnav" href="#s4">품목별 현황</a>
   </nav>
-  <div class="badge">2026년 1–6월 실적</div>
+  <div class="badge"><span id="live-dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#c7c7cc;margin-right:6px;vertical-align:middle;"></span><span id="live-text">데이터 로딩 중...</span></div>
 </div>
 
 <section class="section" id="s1">
@@ -194,11 +189,10 @@ tr:hover td{background:rgba(0,102,204,0.025);}
 
 <script>
 const MO6=['1월','2월','3월','4월','5월','6월'];
-const CH_ORDER=['coupang','naver','jasa','mk','kurly','ohouse','kakao','cm29','etc'];
 const MO12=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
-let totalSales=[89662788, 68303940, 121724969, 166748421, 136579380, 78358257, 0, 0, 0, 0, 0, 0];
-let TARGETS_TOTAL=[125000000,125000000,135000000,140000000,135000000,145000000,145000000,155000000,160000000,155000000,175000000,180000000];
-let TARGETS_TOTAL_SUM=TARGETS_TOTAL.reduce((a,b)=>a+b,0);
+const totalSales=[89662788, 68303940, 121724969, 166748421, 136579380, 78358257, 0, 0, 0, 0, 0, 0];
+const TARGETS_TOTAL=[125000000,125000000,135000000,140000000,135000000,145000000,145000000,155000000,160000000,155000000,175000000,180000000];
+const TARGETS_TOTAL_SUM=TARGETS_TOTAL.reduce((a,b)=>a+b,0);
 const sales2025=[37101847,82811516,68521556,116616302,57452159,78449088,102569795,146408586,146408586,66703115,86776513,132861593];
 const mktTotal=[19940780,13166689,22934771,19814119,23254729,2850000,0,0,0,0,0,0];
 
@@ -232,155 +226,6 @@ const achC=r=>r>=100?'#0066cc':'#e03131';
 const momP=(a,i)=>(!i||!a[i-1])?null:Math.round((a[i]-a[i-1])/a[i-1]*100);
 const momH=v=>v==null?'-':v>0?'<span class="ub">▲'+v+'%</span>':'<span class="dr">▼'+Math.abs(v)+'%</span>';
 const yoyH=v=>v==null?'-':v>0?'<span class="ub">▲'+v+'%</span>':'<span class="dr">▼'+Math.abs(v)+'%</span>';
-
-
-// ═══════════════════════════════════════════════════
-// 실시간 데이터 로드 및 가공
-// ═══════════════════════════════════════════════════
-const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxG4TJg4drTlo9ZvMcZXD-h_bUldcJQRoWHrtmIhJQel8DjVOqM3iu2RyJhV3CSzLgA/exec";
-
-// 6.특판매출 거래처 (자사몰로 재분류)
-const SPECIAL_JASA = new Set([
-  '덕희상회_라이프','주식회사 미드나잇피크닉(라이프)','주식회사 스틸세븐',
-  '파인드_라이프','라이트나인 캠핑아웃도어(라이프)','주식회사 벨누이뜨_라이프'
-]);
-
-function mapChannel(name) {
-  if (!name) return 'etc';
-  const n = String(name).trim();
-  if (SPECIAL_JASA.has(n)) return 'jasa';
-  if (n.includes('쿠팡')) return 'coupang';
-  if (n === '카페24_라이프') return 'jasa';
-  if (n === '스토어팜_라이프') return 'naver';
-  if (n === '카페24' || n === '스토어팜') return 'mk';
-  if (n === '오늘의집_라이프') return 'ohouse';
-  if (n.includes('컬리')) return 'kurly';
-  if (n === '카카오톡선물하기_라이프' || n === '카카오톡스토어_라이프') return 'kakao';
-  if (n === '29CM_라이프') return 'cm29';
-  return 'etc';
-}
-
-function parseMonth(val) {
-  const s = String(val).replace(/\D/g, '');
-  if (s.length >= 6) {
-    const mm = parseInt(s.slice(4, 6), 10);
-    if (mm >= 1 && mm <= 12) return mm - 1;
-  }
-  return null;
-}
-
-function normalizeProduct(name) {
-  return String(name || '').replace(/^덴라이프\s*/, '').trim();
-}
-
-async function fetchData() {
-  const res = await fetch(WEBAPP_URL, { redirect: 'follow' });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return await res.json();
-}
-
-function processChannelSales(channelSales) {
-  // 채널별 월별 매출 집계
-  CH_ORDER.forEach(ch => {
-    CD[ch].sales = Array(12).fill(0);
-  });
-  channelSales.forEach(row => {
-    const ch = mapChannel(row['거래처명']);
-    const mIdx = parseMonth(row['판매월']);
-    const sales = Number(row['매출합계']) || 0;
-    if (mIdx !== null) CD[ch].sales[mIdx] += sales;
-  });
-  // totalSales 재계산
-  for (let i = 0; i < 12; i++) {
-    totalSales[i] = CH_ORDER.reduce((s, ch) => s + (CD[ch].sales[i] || 0), 0);
-  }
-}
-
-function processItemSales(itemSales) {
-  // 품목별 판매현황 집계
-  CH_ORDER.forEach(ch => { PD[ch] = { qty: {}, sales: {} }; });
-  PD.all = { qty: {}, sales: {} };
-
-  itemSales.forEach(row => {
-    const ch = mapChannel(row['거래처명']);
-    const mIdx = parseMonth(row['판매월']);
-    if (mIdx === null) return;
-    const prod = normalizeProduct(row['품목명']);
-    const qty = Number(row['수량합계']) || 0;
-    const sales = Number(row['매출합계']) || 0;
-
-    // 채널별
-    if (!PD[ch].qty[prod]) { PD[ch].qty[prod] = Array(12).fill(0); PD[ch].sales[prod] = Array(12).fill(0); }
-    PD[ch].qty[prod][mIdx] += qty;
-    PD[ch].sales[prod][mIdx] += sales;
-
-    // 전체
-    if (!PD.all.qty[prod]) { PD.all.qty[prod] = Array(12).fill(0); PD.all.sales[prod] = Array(12).fill(0); }
-    PD.all.qty[prod][mIdx] += qty;
-    PD.all.sales[prod][mIdx] += sales;
-  });
-}
-
-function processTargets(targets) {
-  // targets = {"쿠팡":[1월값,...,12월값], "네이버":[], ...} 형태
-  const chKeyMap = {
-    '쿠팡':'coupang','네이버':'naver','자사몰':'jasa',
-    '마더케이':'mk','컬리':'kurly','오늘의집':'ohouse',
-    '카카오':'kakao','29CM':'cm29','기타':'etc'
-  };
-  Object.entries(targets).forEach(([chName, arr]) => {
-    const chKey = chKeyMap[chName];
-    if (!chKey) return;
-    arr.forEach((v, i) => {
-      if (v > 0) CD[chKey].tgt[i] = v;
-    });
-  });
-  // TARGETS_TOTAL 재계산
-  for (let i = 0; i < 12; i++) {
-    TARGETS_TOTAL[i] = CH_ORDER.reduce((s, ch) => s + (CD[ch].tgt[i] || 0), 0);
-  }
-  TARGETS_TOTAL_SUM = TARGETS_TOTAL.reduce((a, b) => a + b, 0);
-}
-
-async function loadAndRender() {
-  try {
-    const json = await fetchData();
-
-    // 데이터 가공
-    if (json.channelSales && json.channelSales.length > 0) {
-      processChannelSales(json.channelSales);
-    }
-    if (json.itemSales && json.itemSales.length > 0) {
-      processItemSales(json.itemSales);
-    }
-    if (json.targets && json.targets.length > 0) {
-      processTargets(json.targets);
-    }
-
-    // 로딩 숨기고 대시보드 표시
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    document.getElementById('live-dot').classList.add('live');
-    const totalRows = (json.channelSales||[]).length + (json.itemSales||[]).length;
-    document.getElementById('live-text').textContent =
-      '실시간 연동 · ' + totalRows.toLocaleString() + '건 로드';
-
-    // 렌더링
-    buildKPI();
-    buildS1();
-    buildS2();
-    buildS3();
-    buildS4();
-
-  } catch(err) {
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('error-area').innerHTML =
-      '<div style="background:#fff5f5;border:1px solid #ffc9c9;border-radius:12px;padding:20px;margin:32px;color:#c92a2a;">' +
-      '<strong>데이터를 불러오지 못했습니다.</strong><br>오류: ' + err.message + '<br><br>' +
-      '<strong>해결방법</strong>: 이 파일을 다운로드해서 Chrome으로 직접 열어주세요.' +
-      '</div>';
-  }
-}
 
 Chart.defaults.color='#7a7a7a';
 Chart.defaults.borderColor='#e0e0e0';
@@ -625,8 +470,125 @@ window.addEventListener('scroll',()=>{
   navs.forEach(n=>n.classList.toggle('on',n.getAttribute('href')==='#'+cur));
 },{passive:true});
 
+
+// ═══════════════════════════════════════════════
+// 실시간 연동
+// ═══════════════════════════════════════════════
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxG4TJg4drTlo9ZvMcZXD-h_bUldcJQRoWHrtmIhJQel8DjVOqM3iu2RyJhV3CSzLgA/exec";
+
+const SPECIAL_JASA = new Set([
+  '덕희상회_라이프','주식회사 미드나잇피크닉(라이프)','주식회사 스틸세븐',
+  '파인드_라이프','라이트나인 캠핑아웃도어(라이프)','주식회사 벨누이뜨_라이프'
+]);
+
+function mapChannelLive(name) {
+  if (!name) return 'etc';
+  const n = String(name).trim();
+  if (SPECIAL_JASA.has(n)) return 'jasa';
+  if (n.includes('쿠팡')) return 'coupang';
+  if (n === '카페24_라이프') return 'jasa';
+  if (n === '스토어팜_라이프') return 'naver';
+  if (n === '카페24' || n === '스토어팜') return 'mk';
+  if (n === '오늘의집_라이프') return 'ohouse';
+  if (n.includes('컬리')) return 'kurly';
+  if (n === '카카오톡선물하기_라이프' || n === '카카오톡스토어_라이프') return 'kakao';
+  if (n === '29CM_라이프') return 'cm29';
+  return 'etc';
+}
+
+function parseMonthIdx(val) {
+  const s = String(val).replace(/\D/g, '');
+  if (s.length >= 6) {
+    const mm = parseInt(s.slice(4,6), 10);
+    if (mm >= 1 && mm <= 12) return mm - 1;
+  }
+  return null;
+}
+
+function applyChannelSales(rows) {
+  CH_ORDER.forEach(ch => { CD[ch].sales = Array(12).fill(0); });
+  rows.forEach(row => {
+    const ch = mapChannelLive(row['거래처명']);
+    const mIdx = parseMonthIdx(row['판매월']);
+    const sales = Number(row['매출합계']) || 0;
+    if (mIdx !== null) CD[ch].sales[mIdx] += sales;
+  });
+  for (let i = 0; i < 12; i++) {
+    totalSales[i] = CH_ORDER.reduce((s, ch) => s + (CD[ch].sales[i]||0), 0);
+  }
+}
+
+function applyItemSales(rows) {
+  CH_ORDER.forEach(ch => { PD[ch] = {qty:{}, sales:{}}; });
+  PD.all = {qty:{}, sales:{}};
+  rows.forEach(row => {
+    const ch = mapChannelLive(row['거래처명']);
+    const mIdx = parseMonthIdx(row['판매월']);
+    if (mIdx === null) return;
+    const prod = String(row['품목명']||'').replace(/^덴라이프\s*/,'').trim();
+    const qty = Number(row['수량합계'])||0;
+    const sales = Number(row['매출합계'])||0;
+    if (!PD[ch].qty[prod]) { PD[ch].qty[prod]=Array(12).fill(0); PD[ch].sales[prod]=Array(12).fill(0); }
+    PD[ch].qty[prod][mIdx] += qty;
+    PD[ch].sales[prod][mIdx] += sales;
+    if (!PD.all.qty[prod]) { PD.all.qty[prod]=Array(12).fill(0); PD.all.sales[prod]=Array(12).fill(0); }
+    PD.all.qty[prod][mIdx] += qty;
+    PD.all.sales[prod][mIdx] += sales;
+  });
+}
+
+function applyTargets(targets) {
+  const chKeyMap = {'쿠팡':'coupang','네이버':'naver','자사몰':'jasa','마더케이':'mk','컬리':'kurly','오늘의집':'ohouse','카카오':'kakao','29CM':'cm29','기타':'etc'};
+  Object.entries(targets).forEach(([chName, arr]) => {
+    const chKey = chKeyMap[chName];
+    if (!chKey || !Array.isArray(arr)) return;
+    arr.forEach((v, i) => { if (v > 0) CD[chKey].tgt[i] = v; });
+  });
+  for (let i = 0; i < 12; i++) {
+    TARGETS_TOTAL[i] = CH_ORDER.reduce((s, ch) => s + (CD[ch].tgt[i]||0), 0);
+  }
+  TARGETS_TOTAL_SUM = TARGETS_TOTAL.reduce((a,b)=>a+b,0);
+}
+
+async function loadAndRender() {
+  const overlay = document.getElementById('loading-overlay');
+  const errOverlay = document.getElementById('error-overlay');
+  const dot = document.getElementById('live-dot');
+  const txt = document.getElementById('live-text');
+
+  try {
+    const res = await fetch(WEBAPP_URL, {redirect:'follow'});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+
+    if (json.channelSales && json.channelSales.length > 0) applyChannelSales(json.channelSales);
+    if (json.itemSales && json.itemSales.length > 0) applyItemSales(json.itemSales);
+    if (json.targets && typeof json.targets === 'object') applyTargets(json.targets);
+
+    if (overlay) overlay.style.display = 'none';
+    if (dot) { dot.style.background = '#2f9e44'; dot.style.animation = 'pulse 2s infinite'; }
+    if (txt) txt.textContent = '실시간 연동 · ' + ((json.channelSales||[]).length + (json.itemSales||[]).length).toLocaleString() + '건';
+
+  } catch(err) {
+    if (overlay) overlay.style.display = 'none';
+    if (dot) dot.style.background = '#e03131';
+    if (txt) txt.textContent = '연동 실패 — 하드코딩 데이터 표시 중';
+    if (errOverlay) {
+      errOverlay.style.display = 'block';
+      errOverlay.innerHTML = '<strong>실시간 연동 실패</strong><br>오류: ' + err.message + '<br><small style="color:#999">하드코딩된 데이터로 대시보드를 표시합니다.</small>';
+      setTimeout(() => { errOverlay.style.display = 'none'; }, 5000);
+    }
+  } finally {
+    // 연동 성공/실패 관계없이 항상 대시보드 렌더링
+    buildKPI();
+    buildS1();
+    buildS2();
+    buildS3();
+    buildS4();
+  }
+}
+
 loadAndRender();
 </script>
-</div><!-- #app -->
 </body>
 </html>

@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>덴라이프 종합 대시보드 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+:root {
+  --primary:#0066cc;--primary-focus:#0071e3;--canvas:#ffffff;--canvas-parchment:#f5f5f7;
+  --ink:#1d1d1f;--ink-muted-80:#333333;--ink-muted-48:#7a7a7a;
+  --divider-soft:rgba(0,0,0,0.06);--hairline:#e0e0e0;
+  --c-coupang:#0066cc;--c-jasanaver:#d6336c;--c-naver:#2f9e44;--c-jasa:#e64980;
+  --c-mk:#0891a8;--c-kurly:#0c8599;--c-ohouse:#1098ad;--c-kakao:#5c5f66;
+  --c-29cm:#9c36b5;--c-etc:#7048b8;--c-mkt:#e8590c;
+  --green:#2f9e44;--red:#e03131;--orange:#e8590c;--yellow:#f08c00;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--canvas);color:var(--ink);font-family:'Inter',system-ui,-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;line-height:1.47;letter-spacing:-0.1px;}
+.topbar{position:sticky;top:0;z-index:200;background:rgba(245,245,247,0.82);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--divider-soft);display:flex;align-items:center;justify-content:space-between;padding:14px 32px;gap:16px;}
+.topbar-left{display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.logo{width:30px;height:30px;border-radius:8px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;color:#fff;flex-shrink:0;}
+.topbar-title{font-size:17px;font-weight:600;letter-spacing:-0.224px;color:var(--ink);}
+.topbar-sub{font-size:12px;color:var(--ink-muted-48);letter-spacing:0;margin-top:1px;}
+.topbar-nav{display:flex;gap:2px;}
+.tnav{padding:6px 14px;border-radius:9999px;font-size:14px;font-weight:400;letter-spacing:-0.12px;color:var(--ink-muted-48);cursor:pointer;transition:all .2s ease;white-space:nowrap;text-decoration:none;}
+.tnav:hover{color:var(--ink);}
+.tnav.on{color:var(--primary);background:rgba(0,102,204,0.08);font-weight:600;}
+.badge{background:var(--canvas);border:1px solid var(--hairline);border-radius:9999px;padding:6px 14px;font-size:13px;color:var(--ink-muted-48);white-space:nowrap;flex-shrink:0;}
+.section{padding:64px 32px 0;}
+.section:last-child{padding-bottom:96px;}
+.section.tile-parchment{background:var(--canvas-parchment);box-sizing:border-box;}
+.sec-head-row{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:28px;}
+.sec-head-row h2{font-size:30px;font-weight:600;letter-spacing:-0.374px;color:var(--ink);}
+.sec-eyebrow{font-size:14px;font-weight:600;letter-spacing:0.231px;color:var(--primary);text-transform:uppercase;}
+.card{background:var(--canvas);border:1px solid var(--hairline);border-radius:18px;padding:24px;}
+.section.tile-parchment .card{background:var(--canvas);}
+.card-t{font-size:14px;font-weight:600;color:var(--ink-muted-48);letter-spacing:0.2px;margin-bottom:16px;display:flex;align-items:center;gap:6px;}
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px;}
+.kpi{background:var(--canvas);border:1px solid var(--hairline);border-radius:18px;padding:18px 18px;position:relative;}
+.kpi-lbl{font-size:13px;font-weight:500;color:var(--ink-muted-48);letter-spacing:0.1px;margin-bottom:8px;}
+.kpi-val{font-size:22px;font-weight:600;letter-spacing:-0.374px;line-height:1.15;margin-bottom:5px;color:var(--ink);}
+.kpi-sub{font-size:13px;color:var(--ink-muted-48);}
+.chip{display:inline-flex;align-items:center;gap:2px;font-size:13px;font-weight:600;padding:3px 8px;border-radius:9999px;margin-top:8px;}
+.cu{background:rgba(47,158,68,0.1);color:var(--green);}
+.cd{background:rgba(224,49,49,0.1);color:var(--red);}
+.cb{background:rgba(0,102,204,0.1);color:var(--primary);}
+.cp{background:rgba(103,65,217,0.1);color:#6741d9;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+.cw{position:relative;}
+canvas{max-width:100%;}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:13px;color:var(--ink-muted-48);}
+.legend span{display:flex;align-items:center;gap:5px;}
+.dot{width:7px;height:7px;border-radius:9999px;flex-shrink:0;}
+.lsamp{width:14px;height:2px;border-radius:1px;flex-shrink:0;}
+.dsamp{width:14px;height:0;border-top:1.5px dashed #c7c7cc;flex-shrink:0;}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:14px;}
+th{background:transparent;padding:9px 12px;text-align:left;font-weight:600;color:var(--ink-muted-48);font-size:12px;letter-spacing:0.3px;text-transform:uppercase;border-bottom:1px solid var(--hairline);white-space:nowrap;}
+td{padding:9px 12px;border-bottom:1px solid var(--divider-soft);white-space:nowrap;color:var(--ink-muted-80);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(0,102,204,0.025);}
+.tr{text-align:right;}.tc{text-align:center;}
+.total-row td{background:var(--canvas-parchment);font-weight:600;color:var(--ink);}
+.ach-bg{background:var(--canvas-parchment);border-radius:3px;height:4px;margin-top:4px;overflow:hidden;width:56px;}
+.ach-fill{height:100%;border-radius:3px;}
+.rank{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:9999px;font-size:11px;font-weight:700;}
+.r1{background:var(--primary);color:#fff;}
+.r2{background:#86868b;color:#fff;}
+.r3{background:#c7986b;color:#fff;}
+.rn{background:var(--canvas-parchment);color:var(--ink-muted-48);}
+.ug{color:var(--green);font-weight:600;}
+.dr{color:var(--red);font-weight:600;}
+.ub{color:var(--primary);font-weight:600;}
+.do{color:var(--orange);font-weight:600;}
+.prod-controls{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;justify-content:space-between;}
+.prod-controls-left{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.seg{display:flex;gap:2px;background:var(--canvas-parchment);border-radius:9999px;padding:3px;flex-wrap:wrap;}
+.seg-btn{padding:6px 16px;border-radius:9999px;font-size:14px;font-weight:500;color:var(--ink-muted-48);cursor:pointer;transition:all .18s;white-space:nowrap;}
+.seg-btn.on{background:var(--canvas);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,0.08);font-weight:600;}
+.ch-pills{display:flex;gap:6px;flex-wrap:wrap;}
+.ch-pill{padding:6px 14px;border-radius:9999px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--hairline);background:var(--canvas);color:var(--ink-muted-48);transition:all .18s;}
+.callout{font-size:14px;color:var(--ink-muted-80);margin-bottom:16px;background:var(--canvas-parchment);border-radius:12px;padding:12px 16px;line-height:1.6;}
+.heat-wrap{overflow-x:auto;}
+.htbl{border-collapse:collapse;font-size:14px;width:100%;}
+.htbl th{background:transparent;padding:9px 11px;font-size:12px;font-weight:600;color:var(--ink-muted-48);letter-spacing:0.3px;text-transform:uppercase;border-bottom:1px solid var(--hairline);white-space:nowrap;text-align:right;}
+.htbl th.hl{text-align:left;}
+.htbl th.sortable{cursor:pointer;user-select:none;transition:color .15s;}
+.htbl th.sortable:hover{color:var(--primary);}
+.htbl th.sort-active{color:var(--primary);}
+.sort-arrow{font-size:10px;margin-left:2px;}
+.htbl td{padding:8px 11px;border-bottom:1px solid var(--divider-soft);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--ink-muted-80);}
+.htbl td.hl{text-align:left;font-weight:500;color:var(--ink);}
+.htbl tr:hover td{background:rgba(0,102,204,0.025);}
+.divider-section{border:none;border-top:1px solid var(--hairline);margin:0;}
+@media (max-width: 1024px) {.kpi-row{grid-template-columns:repeat(3,1fr);}.g3{grid-template-columns:1fr 1fr;}}
+@media (max-width: 700px) {.g2,.g3{grid-template-columns:1fr;}.kpi-row{grid-template-columns:1fr 1fr;}.topbar-nav{display:none;}}
+</style>
+</head>
+<body>
+
+<div id="loading" style="position:fixed;inset:0;background:rgba(255,255,255,0.95);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+  <div style="width:32px;height:32px;border:3px solid #e0e0e0;border-top-color:#0066cc;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+  <div style="font-size:14px;color:#7a7a7a;">구글시트에서 최신 데이터를 불러오는 중...</div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg);}}</style>
+<div id="error-area"></div>
+<div id="app">
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">D</div>
+    <div><div class="topbar-title">덴라이프 종합 대시보드</div><div class="topbar-sub">DENLIFE · D-LIFE LAB · 2026</div></div>
+  </div>
+  <nav class="topbar-nav">
+    <a class="tnav on" href="#s1">총 매출 추이</a>
+    <a class="tnav" href="#s2">채널별 추이</a>
+    <a class="tnav" href="#s3">목표달성률</a>
+    <a class="tnav" href="#s4">품목별 현황</a>
+  </nav>
+  <div class="badge">2026년 1–6월 실적</div>
+</div>
+
+<section class="section" id="s1">
+  <div class="sec-head-row"><div><div class="sec-eyebrow">DENLIFE · 2026 YTD</div><h2>총 매출 추이</h2></div></div>
+  <div class="kpi-row" id="kpi-row"></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-t">월별 총매출 + 마케팅비용</div>
+      <div class="cw" style="height:280px"><canvas id="c-main"></canvas></div>
+      <div class="legend">
+        <span><div class="lsamp" style="background:var(--primary)"></div>2026 총매출</span>
+        <span><div class="lsamp" style="background:var(--c-mkt)"></div>총 광고비 (소진내용)</span>
+        <span><div class="dsamp"></div>2025 매출</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-t">채널별 매출 비중 (월별, 100% 기준)</div>
+      <div class="cw" style="height:280px"><canvas id="c-stack"></canvas></div>
+      <div class="legend">
+        <span><div class="dot" style="background:var(--c-coupang)"></div>쿠팡</span>
+        <span><div class="dot" style="background:var(--c-jasanaver)"></div>자사몰+네이버</span>
+        <span><div class="dot" style="background:var(--c-mk)"></div>마더케이</span>
+        <span><div class="dot" style="background:var(--c-etc)"></div>기타</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider-section" style="margin:64px 0 0;">
+
+<section class="section tile-parchment" id="s2">
+  <div class="sec-head-row"><div><div class="sec-eyebrow">CHANNEL BREAKDOWN</div><h2>채널별 매출 + 마케팅비 추이</h2></div></div>
+  <div class="g3" id="cg1"></div>
+  <div class="g3" id="cg2"></div>
+  <div class="g3" id="cg3"></div>
+</section>
+
+<section class="section" id="s3">
+  <div class="sec-head-row"><div><div class="sec-eyebrow">GOAL ACHIEVEMENT</div><h2>월별 목표매출 달성률</h2></div></div>
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-t">TOTAL 매출 현황 (2026)</div>
+    <div class="tbl-wrap"><table id="tbl-total"></table></div>
+  </div>
+  <div class="g3" id="ch-tbl-grid"></div>
+</section>
+
+<hr class="divider-section" style="margin:64px 0 0;">
+
+<section class="section tile-parchment" id="s4">
+  <div class="sec-head-row"><div><div class="sec-eyebrow">PRODUCT PERFORMANCE</div><h2>품목별 판매 현황</h2></div></div>
+  <div class="prod-controls">
+    <div class="prod-controls-left">
+      <span style="font-size:11px;font-weight:600;color:var(--ink-muted-48);margin-right:4px;">채널</span>
+      <div class="ch-pills" id="prod-ch-pills"></div>
+    </div>
+  </div>
+  <div class="prod-controls" style="margin-top:-6px;">
+    <div class="prod-controls-left">
+      <span style="font-size:11px;font-weight:600;color:var(--ink-muted-48);margin-right:4px;">기간</span>
+      <div class="seg" id="month-seg"></div>
+    </div>
+  </div>
+  <div class="callout">
+    <strong style="color:var(--ink)">읽는 법</strong> — 먼저 <strong style="color:var(--ink)">채널</strong>을 선택한 뒤, <strong style="color:var(--ink)">기간</strong>(전체 누적 또는 특정 월)을 선택하면 해당 채널·기간의 품목 순위가 표시됩니다. <strong style="color:var(--ink)">판매수량</strong> 또는 <strong style="color:var(--ink)">매출</strong> 헤더를 클릭하면 해당 기준으로 정렬됩니다.
+  </div>
+  <div class="card" style="padding:20px 18px;">
+    <div class="card-t" id="prod-title">전체 채널 · 1–6월 누적</div>
+    <div class="heat-wrap"><table class="htbl" id="prod-htbl"></table></div>
+  </div>
+</section>
+
+<script>
+const MO6=['1월','2월','3월','4월','5월','6월'];
+const MO12=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+let totalSales=[89662788, 68303940, 121724969, 166748421, 136579380, 78358257, 0, 0, 0, 0, 0, 0];
+let TARGETS_TOTAL=[125000000,125000000,135000000,140000000,135000000,145000000,145000000,155000000,160000000,155000000,175000000,180000000];
+let TARGETS_TOTAL_SUM=TARGETS_TOTAL.reduce((a,b)=>a+b,0);
+const sales2025=[37101847,82811516,68521556,116616302,57452159,78449088,102569795,146408586,146408586,66703115,86776513,132861593];
+const mktTotal=[19940780,13166689,22934771,19814119,23254729,2850000,0,0,0,0,0,0];
+
+const CD={
+  coupang:{name:'쿠팡',color:'#0066cc',sales:[57721278, 36803281, 59366492, 102548865, 98428215, 31741957],mkt:[6242283,6000000,5500000,6000000,8210637,0],tgt:[70000000, 70000000, 80000000, 80000000, 80000000, 90000000, 90000000, 100000000, 100000000, 100000000, 120000000, 120000000],s25:[19794662,60835181,53033968,73209092,47716044,63701463,85833449,88389839,104013743,51436483,67777948,63165265]},
+  naver:{name:'네이버',color:'#2f9e44',sales:[2938556, 3873941, 18291953, 5977210, 8501511, 14225800],mkt:[1951579,1559682,2093476,3302765,2474587,0],tgt:[5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000],s25:[1409507,1226760,1025030,1014276,816169,997048,3919603,3296246,1322616,868995,1208157,2572708]},
+  jasa:{name:'자사몰',color:'#e64980',sales:[15407117, 13847369, 19776515, 20903734, 14683331, 20916061],mkt:[7666258,957007,9522479,6263646,7130299,0],tgt:[20000000, 20000000, 20000000, 20000000, 20000000, 20000000, 20000000, 20000000, 20000000, 20000000, 20000000, 20000000],s25:[39363,0,0,0,0,0,0,47818,89909,1628619,4839856,22560412]},
+  mk:{name:'마더케이',color:'#0891a8',sales:[5681302, 6398590, 12774571, 20987432, 6911509, 5030727],mkt:[0,0,0,0,0,0],tgt:[5000000, 5000000, 5000000, 10000000, 5000000, 5000000, 5000000, 5000000, 10000000, 5000000, 5000000, 10000000],s25:[11539227,16894364,10807331,36646914,6171014,11606246,7694861,8860338,39639411,10018664,7976669,39278874]},
+  kurly:{name:'컬리',color:'#0c8599',sales:[4624045, 4850082, 6894425, 2711631, 5184821, 1445179],mkt:[0,0,0,0,0,0],tgt:[5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000],s25:[4276815,3855211,3485227,2673008,2500022,2068149,2039829,1674181,1069271,2136175,3915801,4333694]},
+  ohouse:{name:'오늘의집',color:'#1098ad',sales:[320820, 250363, 381451, 850637, 1090099, 1651009],mkt:[0,0,22968,92708,181621,0],tgt:[5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000],s25:[0,0,0,0,0,0,0,0,0,243361,580635,344181]},
+  kakao:{name:'카카오',color:'#5c5f66',sales:[949995, 493806, 732998, 304453, 182730, 306277],mkt:[0,0,0,0,0,0],tgt:[5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000],s25:[42273,0,28182,66364,107636,0,58091,139909,64454,0,0,341460]},
+  cm29:{name:'29CM',color:'#9c36b5',sales:[401455, 1065815, 500999, 489549, 224274, 522183],mkt:[0,0,0,0,0,0],tgt:[5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000],s25:[0,0,141818,3006648,141274,76182,3023962,1913087,209182,370818,477447,264999]},
+  etc:{name:'기타',color:'#7048b8',sales:[1618220, 720693, 3005565, 11974910, 1372890, 2519064],mkt:[0,0,0,0,0,0],tgt:[5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000, 5000000],s25:[0,0,0,0,0,0,0,0,0,0,0,0]},
+};
+
+const PD={
+  all:{qty:{'스탠딩지퍼백 Basic':[2285, 1980, 4980, 6718, 5451, 8],'슬라이딩 지퍼백 4종 멀티팩':[1038, 444, 1287, 695, 702, 743],'육수저장팩 700':[1028, 0, 0, 576, 864, 288],'믹싱볼의 정석 4종 세트':[259, 253, 248, 246, 494, 143],'육수저장팩 2개':[1220, 544, 580, 1020, 850, 510],'커피머신 클리너':[665, 547, 1959, 1967, 540, 1207],'욕실청소세제 500ml':[692, 1200, 1059, 1047, 1289, 686],'다목적 비니거 세정티슈':[167, 180, 264, 584, 256, 642],'착붙 차량용 쓰레기봉투':[370, 273, 312, 991, 2304, 1123],'다목적 비니거 세정티슈 (리필형)':[310, 208, 199, 690, 112, 188],'실리콘 브러쉬':[0, 0, 0, 0, 27, 228],'블랙캣츠 체망 20 cm':[8, 12, 5, 44, 8, 166],'[대용량] 슬라이딩 지퍼백 Medium / 70ea':[26, 40, 55, 26, 20, 25],'[대용량] 슬라이딩 지퍼백 Large / 60ea':[19, 56, 42, 24, 23, 14],'텀블러 발포 세정제':[0, 0, 0, 160, 60, 87],'일회용 도마':[38, 46, 59, 177, 29, 52],'세탁조클리너':[42, 137, 156, 161, 100, 59],'빨아쓰는 행주':[50, 66, 28, 12, 16, 14],'스탠딩 지퍼백 200매 (S,M,L 혼합형)':[3, 1, 1, 5, 1, 6],'[선물하기] 블랙 클리닝 SET':[144, 54, 66, 49, 28, 42],'[선물하기] 세정티슈 본품+리필 SET (300매)':[25, 10, 52, 6, 11, 18],'[선물하기] 홈클리닝 SET':[24, 24, 8, 9, 0, 0]},sales:{'스탠딩지퍼백 Basic':[16766364, 14640701, 39059017, 57858482, 49146804, 121918],'슬라이딩 지퍼백 4종 멀티팩':[8107515, 3609255, 10308361, 6426649, 6482111, 6903580],'육수저장팩 700':[5327096, 0, 0, 3089376, 4790880, 1596960],'믹싱볼의 정석 4종 세트':[5187655, 5037385, 4866200, 4795110, 9658501, 3399311],'육수저장팩 2개':[3965000, 1768000, 1332500, 2210000, 2210000, 1105000],'커피머신 클리너':[8213454, 6799618, 20161889, 18275010, 6278179, 11960985],'욕실청소세제 500ml':[3137038, 5258118, 4602807, 4863894, 5622250, 3324896],'다목적 비니거 세정티슈':[1961788, 2250492, 3159547, 6296264, 2511774, 5726897],'착붙 차량용 쓰레기봉투':[1455897, 1183996, 1373503, 3710826, 10313347, 5135650],'다목적 비니거 세정티슈 (리필형)':[2545094, 2043165, 2024573, 6181860, 948812, 1561002],'실리콘 브러쉬':[0, 0, 0, 0, 209250, 2171319],'블랙캣츠 체망 20 cm':[47637, 85637, 36365, 262572, 61188, 1281665],'[대용량] 슬라이딩 지퍼백 Medium / 70ea':[333268, 502730, 682305, 346674, 269930, 320259],'[대용량] 슬라이딩 지퍼백 Large / 60ea':[271187, 749134, 593920, 367164, 355057, 205170],'텀블러 발포 세정제':[0, 0, 0, 1236464, 461898, 474181],'일회용 도마':[447969, 459520, 642685, 1627613, 319325, 540877],'세탁조클리너':[247109, 727129, 806856, 743712, 446073, 284158],'빨아쓰는 행주':[304550, 493088, 212541, 94362, 125816, 110089],'스탠딩 지퍼백 200매 (S,M,L 혼합형)':[86365, 22727, 25455, 125456, 23636, 157638],'[선물하기] 블랙 클리닝 SET':[694829, 292095, 353186, 227185, 129820, 194730],'[선물하기] 세정티슈 본품+리필 SET (300매)':[117999, 49272, 247727, 26455, 52910, 79365],'[선물하기] 홈클리닝 SET':[137167, 152439, 46904, 50813, 0, 0]}},
+  coupang:{qty:{'스탠딩지퍼백 Basic':[2225, 1918, 3384, 6660, 5436, 0],'슬라이딩 지퍼백 4종 멀티팩':[995, 395, 1200, 660, 660, 660],'육수저장팩 700':[1028, 0, 0, 576, 864, 288],'믹싱볼의 정석 4종 세트':[240, 240, 240, 240, 480, 120],'육수저장팩 2개':[1220, 544, 580, 1020, 850, 510],'커피머신 클리너':[0, 39, 676, 1050, 0, 420],'욕실청소세제 500ml':[576, 1024, 864, 480, 1056, 480],'다목적 비니거 세정티슈':[0, 20, 66, 192, 108, 378],'착붙 차량용 쓰레기봉투':[50, 0, 50, 150, 600, 200]},sales:{'스탠딩지퍼백 Basic':[16002200, 13794256, 24337728, 57011040, 48924000, 0],'슬라이딩 지퍼백 4종 멀티팩':[7565980, 3003580, 9124800, 5940000, 5940000, 5940000],'육수저장팩 700':[5327096, 0, 0, 3089376, 4790880, 1596960],'믹싱볼의 정석 4종 세트':[4581840, 4581840, 4581840, 4581840, 9163680, 2563680],'육수저장팩 2개':[3965000, 1768000, 1332500, 2210000, 2210000, 1105000],'커피머신 클리너':[0, 326196, 5654064, 8782200, 0, 3512880],'욕실청소세제 500ml':[2434752, 4328448, 3652128, 2028960, 4463712, 2028960],'다목적 비니거 세정티슈':[0, 156360, 515988, 1501056, 844344, 2955204],'착붙 차량용 쓰레기봉투':[133650, 0, 133650, 400950, 1876300, 643600]}},
+  naver:{qty:{'[대용량] 슬라이딩 지퍼백 Medium / 70ea':[26, 40, 55, 26, 20, 25],'[대용량] 슬라이딩 지퍼백 Large / 60ea':[19, 56, 42, 24, 23, 14],'스탠딩지퍼백 Basic':[6, 16, 1565, 49, 15, 8],'커피머신 클리너':[4, 13, 35, 29, 62, 214],'착붙 차량용 쓰레기봉투':[52, 29, 34, 139, 358, 292],'텀블러 발포 세정제':[0, 0, 0, 160, 60, 87],'다목적 비니거 세정티슈':[18, 14, 35, 13, 57, 93],'실리콘 브러쉬':[0, 0, 0, 0, 18, 72]},sales:{'[대용량] 슬라이딩 지퍼백 Medium / 70ea':[333268, 502730, 682305, 346674, 269930, 320259],'[대용량] 슬라이딩 지퍼백 Large / 60ea':[271187, 749134, 593920, 367164, 355057, 205170],'스탠딩지퍼백 Basic':[81820, 226177, 14274753, 716537, 222804, 121918],'커피머신 클리너':[59637, 171545, 454824, 391532, 742874, 2006531],'착붙 차량용 쓰레기봉투':[172158, 91826, 174850, 670344, 1841404, 1465301],'텀블러 발포 세정제':[0, 0, 0, 1236464, 461898, 474181],'다목적 비니거 세정티슈':[226104, 174274, 459357, 173201, 638238, 853131],'실리콘 브러쉬':[0, 0, 0, 0, 123344, 484517]}},
+  jasa:{qty:{'커피머신 클리너':[612, 480, 1013, 538, 324, 543],'다목적 비니거 세정티슈 (리필형)':[304, 189, 195, 682, 108, 177],'다목적 비니거 세정티슈':[137, 122, 150, 348, 80, 145],'착붙 차량용 쓰레기봉투':[182, 74, 51, 156, 1160, 545],'믹싱볼의 정석 4종 세트':[19, 12, 7, 4, 3, 12],'욕실청소세제 500ml':[15, 9, 19, 83, 15, 44],'실리콘 브러쉬':[0, 0, 0, 0, 9, 156],'블랙캣츠 체망 20 cm':[8, 12, 5, 44, 8, 166]},sales:{'커피머신 클리너':[7484565, 6105060, 11998614, 6330025, 3868643, 6175603],'다목적 비니거 세정티슈 (리필형)':[2471975, 1861833, 1985375, 6106180, 906897, 1450009],'다목적 비니거 세정티슈':[1556530, 1602192, 2009174, 4199867, 895658, 1615189],'착붙 차량용 쓰레기봉투':[821845, 389797, 234334, 600670, 5875752, 2719944],'믹싱볼의 정석 4종 세트':[605815, 420000, 248815, 142180, 106635, 426540],'욕실청소세제 500ml':[107362, 71455, 153729, 496548, 121365, 356003],'실리콘 브러쉬':[0, 0, 0, 0, 85906, 1686802],'블랙캣츠 체망 20 cm':[47637, 85637, 36365, 262572, 61188, 1281665]}},
+  mk:{qty:{'일회용 도마':[38, 46, 59, 177, 29, 52],'세탁조클리너':[42, 137, 156, 161, 100, 59],'커피머신 클리너':[1, 5, 231, 350, 71, 27],'욕실청소세제 500ml':[47, 122, 159, 444, 170, 100],'착붙 차량용 쓰레기봉투':[32, 65, 58, 452, 138, 72],'슬라이딩 지퍼백 4종 멀티팩':[11, 8, 42, 14, 27, 68]},sales:{'일회용 도마':[447969, 459520, 642685, 1627613, 319325, 540877],'세탁조클리너':[247109, 727129, 806856, 743712, 446073, 284158],'커피머신 클리너':[13636, 67725, 2001570, 2771253, 571207, 225336],'욕실청소세제 500ml':[232190, 522032, 651874, 1990858, 662883, 460381],'착붙 차량용 쓰레기봉투':[74155, 186084, 220929, 1545665, 467882, 234075],'슬라이딩 지퍼백 4종 멀티팩':[137181, 83769, 535578, 181203, 302840, 713488]}},
+  kurly:{qty:{'스탠딩지퍼백 Basic':[54, 46, 31, 9, 0, 0],'슬라이딩 지퍼백 4종 멀티팩':[32, 41, 45, 21, 15, 15],'커피머신 클리너':[46, 0, 0, 0, 83, 1],'착붙 차량용 쓰레기봉투':[34, 90, 112, 70, 40, 0],'욕실청소세제 500ml':[52, 42, 8, 22, 12, 18],'빨아쓰는 행주':[50, 66, 28, 12, 16, 14]},sales:{'스탠딩지퍼백 Basic':[682344, 620268, 446536, 130905, 0, 0],'슬라이딩 지퍼백 4종 멀티팩':[404354, 521906, 647983, 305446, 239271, 250092],'커피머신 클리너':[623070, 0, 0, 0, 1095455, 13545],'착붙 차량용 쓰레기봉투':[146815, 441835, 573830, 365922, 209100, 0],'욕실청소세제 500ml':[345098, 303729, 61817, 172997, 94362, 141544],'빨아쓰는 행주':[304550, 493088, 212541, 94362, 125816, 110089]}},
+  ohouse:{qty:{'다목적 비니거 세정티슈':[8, 7, 7, 23, 10, 20],'믹싱볼의 정석 4종 세트':[0, 1, 1, 2, 11, 11],'욕실청소세제 500ml':[2, 3, 9, 18, 36, 44],'스탠딩 지퍼백 200매 (S,M,L 혼합형)':[3, 1, 1, 5, 1, 6]},sales:{'다목적 비니거 세정티슈':[115637, 108455, 100136, 322548, 121085, 229184],'믹싱볼의 정석 4종 세트':[0, 35545, 35545, 71090, 388186, 409091],'욕실청소세제 500ml':[17636, 32454, 83259, 174531, 279928, 338008],'스탠딩 지퍼백 200매 (S,M,L 혼합형)':[86365, 22727, 25455, 125456, 23636, 157638]}},
+  kakao:{qty:{'[선물하기] 블랙 클리닝 SET':[144, 54, 66, 49, 28, 42],'[선물하기] 세정티슈 본품+리필 SET (300매)':[25, 10, 52, 6, 11, 18],'[선물하기] 홈클리닝 SET':[24, 24, 8, 9, 0, 0]},sales:{'[선물하기] 블랙 클리닝 SET':[694829, 292095, 353186, 227185, 129820, 194730],'[선물하기] 세정티슈 본품+리필 SET (300매)':[117999, 49272, 247727, 26455, 52910, 79365],'[선물하기] 홈클리닝 SET':[137167, 152439, 46904, 50813, 0, 0]}},
+  cm29:{qty:{'착붙 차량용 쓰레기봉투':[20, 15, 7, 24, 8, 14],'다목적 비니거 세정티슈':[4, 17, 6, 8, 1, 6],'다목적 비니거 세정티슈 (리필형)':[6, 19, 4, 8, 4, 11],'커피머신 클리너':[2, 10, 4, 0, 0, 2]},sales:{'착붙 차량용 쓰레기봉투':[107274, 74454, 35910, 127275, 42909, 72730],'다목적 비니거 세정티슈':[63517, 209211, 74892, 99592, 12449, 74189],'다목적 비니거 세정티슈 (리필형)':[73119, 181332, 39198, 75680, 41915, 110993],'커피머신 클리너':[32546, 129092, 52817, 0, 0, 27090]}}
+};
+
+const fmtN=n=>n||n===0?Math.round(n).toLocaleString('ko-KR'):'-';
+const pct=(a,b)=>b?Math.round(a/b*100):0;
+const achC=r=>r>=100?'#0066cc':'#e03131';
+const momP=(a,i)=>(!i||!a[i-1])?null:Math.round((a[i]-a[i-1])/a[i-1]*100);
+const momH=v=>v==null?'-':v>0?'<span class="ub">▲'+v+'%</span>':'<span class="dr">▼'+Math.abs(v)+'%</span>';
+const yoyH=v=>v==null?'-':v>0?'<span class="ub">▲'+v+'%</span>':'<span class="dr">▼'+Math.abs(v)+'%</span>';
+
+
+// ═══════════════════════════════════════════════════
+// 실시간 데이터 로드 및 가공
+// ═══════════════════════════════════════════════════
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxG4TJg4drTlo9ZvMcZXD-h_bUldcJQRoWHrtmIhJQel8DjVOqM3iu2RyJhV3CSzLgA/exec";
+
+// 6.특판매출 거래처 (자사몰로 재분류)
+const SPECIAL_JASA = new Set([
+  '덕희상회_라이프','주식회사 미드나잇피크닉(라이프)','주식회사 스틸세븐',
+  '파인드_라이프','라이트나인 캠핑아웃도어(라이프)','주식회사 벨누이뜨_라이프'
+]);
+
+function mapChannel(name) {
+  if (!name) return 'etc';
+  const n = String(name).trim();
+  if (SPECIAL_JASA.has(n)) return 'jasa';
+  if (n.includes('쿠팡')) return 'coupang';
+  if (n === '카페24_라이프') return 'jasa';
+  if (n === '스토어팜_라이프') return 'naver';
+  if (n === '카페24' || n === '스토어팜') return 'mk';
+  if (n === '오늘의집_라이프') return 'ohouse';
+  if (n.includes('컬리')) return 'kurly';
+  if (n === '카카오톡선물하기_라이프' || n === '카카오톡스토어_라이프') return 'kakao';
+  if (n === '29CM_라이프') return 'cm29';
+  return 'etc';
+}
+
+function parseMonth(val) {
+  const s = String(val).replace(/\D/g, '');
+  if (s.length >= 6) {
+    const mm = parseInt(s.slice(4, 6), 10);
+    if (mm >= 1 && mm <= 12) return mm - 1;
+  }
+  return null;
+}
+
+function normalizeProduct(name) {
+  return String(name || '').replace(/^덴라이프\s*/, '').trim();
+}
+
+async function fetchData() {
+  const res = await fetch(WEBAPP_URL, { redirect: 'follow' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return await res.json();
+}
+
+function processChannelSales(channelSales) {
+  // 채널별 월별 매출 집계
+  CH_ORDER.forEach(ch => {
+    CD[ch].sales = Array(12).fill(0);
+  });
+  channelSales.forEach(row => {
+    const ch = mapChannel(row['거래처명']);
+    const mIdx = parseMonth(row['판매월']);
+    const sales = Number(row['매출합계']) || 0;
+    if (mIdx !== null) CD[ch].sales[mIdx] += sales;
+  });
+  // totalSales 재계산
+  for (let i = 0; i < 12; i++) {
+    totalSales[i] = CH_ORDER.reduce((s, ch) => s + (CD[ch].sales[i] || 0), 0);
+  }
+}
+
+function processItemSales(itemSales) {
+  // 품목별 판매현황 집계
+  CH_ORDER.forEach(ch => { PD[ch] = { qty: {}, sales: {} }; });
+  PD.all = { qty: {}, sales: {} };
+
+  itemSales.forEach(row => {
+    const ch = mapChannel(row['거래처명']);
+    const mIdx = parseMonth(row['판매월']);
+    if (mIdx === null) return;
+    const prod = normalizeProduct(row['품목명']);
+    const qty = Number(row['수량합계']) || 0;
+    const sales = Number(row['매출합계']) || 0;
+
+    // 채널별
+    if (!PD[ch].qty[prod]) { PD[ch].qty[prod] = Array(12).fill(0); PD[ch].sales[prod] = Array(12).fill(0); }
+    PD[ch].qty[prod][mIdx] += qty;
+    PD[ch].sales[prod][mIdx] += sales;
+
+    // 전체
+    if (!PD.all.qty[prod]) { PD.all.qty[prod] = Array(12).fill(0); PD.all.sales[prod] = Array(12).fill(0); }
+    PD.all.qty[prod][mIdx] += qty;
+    PD.all.sales[prod][mIdx] += sales;
+  });
+}
+
+function processTargets(targets) {
+  // targets = {"쿠팡":[1월값,...,12월값], "네이버":[], ...} 형태
+  const chKeyMap = {
+    '쿠팡':'coupang','네이버':'naver','자사몰':'jasa',
+    '마더케이':'mk','컬리':'kurly','오늘의집':'ohouse',
+    '카카오':'kakao','29CM':'cm29','기타':'etc'
+  };
+  Object.entries(targets).forEach(([chName, arr]) => {
+    const chKey = chKeyMap[chName];
+    if (!chKey) return;
+    arr.forEach((v, i) => {
+      if (v > 0) CD[chKey].tgt[i] = v;
+    });
+  });
+  // TARGETS_TOTAL 재계산
+  for (let i = 0; i < 12; i++) {
+    TARGETS_TOTAL[i] = CH_ORDER.reduce((s, ch) => s + (CD[ch].tgt[i] || 0), 0);
+  }
+  TARGETS_TOTAL_SUM = TARGETS_TOTAL.reduce((a, b) => a + b, 0);
+}
+
+async function loadAndRender() {
+  try {
+    const json = await fetchData();
+
+    // 데이터 가공
+    if (json.channelSales && json.channelSales.length > 0) {
+      processChannelSales(json.channelSales);
+    }
+    if (json.itemSales && json.itemSales.length > 0) {
+      processItemSales(json.itemSales);
+    }
+    if (json.targets && json.targets.length > 0) {
+      processTargets(json.targets);
+    }
+
+    // 로딩 숨기고 대시보드 표시
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('live-dot').classList.add('live');
+    const totalRows = (json.channelSales||[]).length + (json.itemSales||[]).length;
+    document.getElementById('live-text').textContent =
+      '실시간 연동 · ' + totalRows.toLocaleString() + '건 로드';
+
+    // 렌더링
+    buildKPI();
+    buildS1();
+    buildS2();
+    buildS3();
+    buildS4();
+
+  } catch(err) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error-area').innerHTML =
+      '<div style="background:#fff5f5;border:1px solid #ffc9c9;border-radius:12px;padding:20px;margin:32px;color:#c92a2a;">' +
+      '<strong>데이터를 불러오지 못했습니다.</strong><br>오류: ' + err.message + '<br><br>' +
+      '<strong>해결방법</strong>: 이 파일을 다운로드해서 Chrome으로 직접 열어주세요.' +
+      '</div>';
+  }
+}
+
+Chart.defaults.color='#7a7a7a';
+Chart.defaults.borderColor='#e0e0e0';
+Chart.defaults.font.family="'Inter',system-ui,-apple-system,sans-serif";
+Chart.defaults.font.size=13;
+
+function buildKPI(){
+  const sumSales=totalSales.slice(0,6).reduce((a,b)=>a+b,0);
+  const sumMkt=mktTotal.slice(0,6).reduce((a,b)=>a+b,0);
+  const sumCoupang=CD.coupang.sales.reduce((a,b)=>a+b,0);
+  const coupangShare=Math.round(sumCoupang/sumSales*100);
+  const mktRatio=sumSales>0?Math.round((sumMkt/sumSales)*100):0;
+  const maxIdx=totalSales.slice(0,6).indexOf(Math.max(...totalSales.slice(0,6)));
+  const totalTarget=TARGETS_TOTAL_SUM;
+  const achRate=pct(sumSales,totalTarget);
+  document.getElementById('kpi-row').innerHTML=
+    '<div class="kpi"><div class="kpi-lbl">누적 총매출 (1–6월)</div><div class="kpi-val">'+fmtN(sumSales)+'</div><div class="kpi-sub">목표 '+fmtN(totalTarget)+' 대비</div><div class="chip cd">▼ 달성률 '+achRate+'%</div></div>'+
+    '<div class="kpi"><div class="kpi-lbl">최고 매출월</div><div class="kpi-val">'+fmtN(totalSales[maxIdx])+'</div><div class="kpi-sub">'+MO6[maxIdx]+' · 달성률 '+pct(totalSales[maxIdx],200000000)+'%</div><div class="chip cu">'+momH(momP(totalSales,maxIdx))+'</div></div>'+
+    '<div class="kpi"><div class="kpi-lbl">6월 매출</div><div class="kpi-val">'+fmtN(totalSales[5])+'</div><div class="kpi-sub">전월 '+fmtN(totalSales[4])+' 대비</div><div class="chip cd">'+momH(momP(totalSales,5))+'</div></div>'+
+    '<div class="kpi"><div class="kpi-lbl">쿠팡 채널 비중</div><div class="kpi-val">'+coupangShare+'%</div><div class="kpi-sub">1–6월 누적매출 대비</div><div class="chip cb">누적 채널 1위</div></div>'+
+    '<div class="kpi"><div class="kpi-lbl">누적 광고비 · 비중</div><div class="kpi-val">'+fmtN(sumMkt)+'</div><div class="kpi-sub">광고비 ÷ 매출 = '+mktRatio+'%</div><div class="chip cp">광고비 비중 '+mktRatio+'%</div></div>';
+}
+
+function buildS1(){
+  new Chart(document.getElementById('c-main'),{
+    type:'bar',
+    data:{labels:MO12,datasets:[
+      {label:'총매출',data:totalSales,backgroundColor:totalSales.map((_,i)=>i<6?'rgba(0,102,204,0.85)':'rgba(0,102,204,0.1)'),borderRadius:4,order:2},
+      {label:'광고비',data:mktTotal,backgroundColor:'rgba(232,89,12,0.78)',borderRadius:4,order:2},
+      {label:'2025',data:sales2025,type:'line',borderColor:'#c7c7cc',borderDash:[4,4],borderWidth:1.5,pointRadius:0,fill:false,tension:.3,order:1}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#1d1d1f',padding:10,cornerRadius:8,filter:c=>c.dataset.label!=='2025',callbacks:{label:c=>c.dataset.label+': '+fmtN(c.raw)}}},
+      scales:{y:{grid:{color:'#f0f0f0'},ticks:{callback:v=>v.toLocaleString()}},x:{grid:{display:false}}}}
+  });
+  const jn=MO6.map((_,i)=>(CD.jasa.sales[i]||0)+(CD.naver.sales[i]||0));
+  const cp=CD.coupang.sales.map(v=>v||0);
+  const mk=CD.mk.sales.map(v=>v||0);
+  const et=totalSales.slice(0,6).map((t,i)=>Math.max(0,t-cp[i]-jn[i]-mk[i]));
+  const pctOf=(arr,i,tot)=>tot[i]>0?arr[i]/tot[i]*100:0;
+  new Chart(document.getElementById('c-stack'),{
+    type:'bar',
+    data:{labels:MO6,datasets:[
+      {label:'쿠팡',data:cp.map((v,i)=>pctOf(cp,i,totalSales)),backgroundColor:'rgba(0,102,204,0.85)',borderRadius:0},
+      {label:'자사몰+네이버',data:jn.map((v,i)=>pctOf(jn,i,totalSales)),backgroundColor:'rgba(214,51,108,0.85)',borderRadius:0},
+      {label:'마더케이',data:mk.map((v,i)=>pctOf(mk,i,totalSales)),backgroundColor:'rgba(8,145,168,0.85)',borderRadius:0},
+      {label:'기타',data:et.map((v,i)=>pctOf(et,i,totalSales)),backgroundColor:'rgba(134,142,150,0.55)',borderRadius:0},
+    ]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#1d1d1f',padding:10,cornerRadius:8,callbacks:{label:c=>c.dataset.label+': '+c.raw.toFixed(1)+'%'}}},
+      scales:{x:{stacked:true,min:0,max:100,grid:{color:'#f0f0f0'},ticks:{callback:v=>v+'%'}},y:{stacked:true,grid:{display:false}}}}
+  });
+}
+
+const CH_ROWS=[['coupang','naver','jasa'],['mk','kurly','ohouse'],['kakao','cm29','etc']];
+function buildS2(){
+  CH_ROWS.forEach((row,ri)=>{
+    const grid=document.getElementById('cg'+(ri+1));
+    row.forEach(ck=>{
+      const d=CD[ck];
+      const div=document.createElement('div');
+      div.className='card';
+      const cid='cc-'+ck;
+      div.innerHTML='<div class="card-t"><span style="display:inline-block;width:7px;height:7px;border-radius:9999px;background:'+d.color+';margin-right:5px;"></span>'+d.name+'</div><div class="cw" style="height:170px"><canvas id="'+cid+'"></canvas></div>';
+      grid.appendChild(div);
+      setTimeout(()=>{
+        const sales12 = d.sales.concat(Array(12-d.sales.length).fill(null));
+        const mkt12 = d.mkt.concat(Array(12-d.mkt.length).fill(null));
+        new Chart(document.getElementById(cid),{
+          type:'bar',
+          data:{labels:MO12,datasets:[
+            {label:'2026 매출',data:sales12,backgroundColor:d.color+'cc',borderRadius:3,order:2},
+            {label:'광고비',data:mkt12,backgroundColor:'rgba(232,89,12,0.7)',borderRadius:3,order:2},
+            {label:'2025 매출',data:d.s25,type:'line',borderColor:'#c7c7cc',borderDash:[4,4],borderWidth:1.3,pointRadius:0,fill:false,tension:.3,spanGaps:true,order:1}
+          ]},
+          options:{responsive:true,maintainAspectRatio:false,
+            plugins:{legend:{display:false},tooltip:{backgroundColor:'#1d1d1f',padding:8,cornerRadius:8,filter:c=>c.dataset.label!=='2025 매출',callbacks:{label:c=>c.dataset.label+': '+fmtN(c.raw)}}},
+            scales:{y:{grid:{color:'#f0f0f0'},ticks:{callback:v=>v.toLocaleString(),maxTicksLimit:4,font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
+        });
+      },0);
+    });
+  });
+}
+
+function buildS3(){
+  const tbl=document.getElementById('tbl-total');
+  let h='<thead><tr><th>월별</th><th class="tr">2025년 매출</th><th class="tr">목표매출</th><th class="tr">매출실적</th><th class="tr">달성율</th><th class="tr">MOM</th><th class="tr">YOY</th></tr></thead><tbody>';
+  let tot=0;
+  for(let i=0;i<12;i++){
+    const tgt=TARGETS_TOTAL[i]||200000000,act=totalSales[i]||0,r=act>0?pct(act,tgt):0;
+    const mom=momP(totalSales,i);
+    const y25=sales2025[i]||0;
+    const yoy=(act>0&&y25>0)?Math.round((act-y25)/y25*100):null;
+    tot+=act;
+    h+='<tr'+(i<6?'':' style="color:#c7c7cc"')+'><td>'+MO12[i]+'</td>'+
+      '<td class="tr" style="color:var(--ink-muted-48);">'+fmtN(y25)+'</td>'+
+      '<td class="tr">'+fmtN(tgt)+'</td><td class="tr">'+(act>0?fmtN(act):'-')+'</td>'+
+      '<td class="tr">'+(act>0?'<span style="color:'+achC(r)+';font-weight:600;">'+r+'%</span>':'0%')+'</td>'+
+      '<td class="tr">'+(act>0?momH(mom):'-')+'</td><td class="tr">'+(act>0?yoyH(yoy):'-')+'</td></tr>';
+  }
+  const tr=pct(tot,2400000000);
+  const sum25=sales2025.reduce((a,b)=>a+b,0);
+  h+='<tr class="total-row"><td>total</td><td class="tr">'+fmtN(sum25)+'</td><td class="tr">'+fmtN(TARGETS_TOTAL_SUM)+'</td><td class="tr">'+fmtN(tot)+'</td><td class="tr"><span style="color:'+achC(tr)+';font-weight:600;">'+tr+'%</span></td><td class="tr">-</td><td class="tr">-</td></tr>';
+  h+='</tbody>';tbl.innerHTML=h;
+
+  const grid=document.getElementById('ch-tbl-grid');
+  ['coupang','naver','jasa','mk','kurly','ohouse','kakao','cm29','etc'].forEach(ck=>{
+    const d=CD[ck];
+    const tgts=d.tgt.concat(Array(6).fill(d.tgt[d.tgt.length-1]||0));
+    let card='<div class="card"><div class="card-t" style="color:'+d.color+'"><span style="display:inline-block;width:7px;height:7px;border-radius:9999px;background:'+d.color+';margin-right:5px;"></span>'+d.name+'</div>'+
+      '<div class="tbl-wrap"><table style="font-size:11px;"><thead><tr><th>월</th><th class="tr">목표</th><th class="tr">실적</th><th class="tr">달성</th><th class="tr">MOM</th></tr></thead><tbody>';
+    let ct=0,ctt=0;
+    for(let i=0;i<6;i++){
+      const tgt=tgts[i]||0,act=d.sales[i]||0,r=act>0?pct(act,tgt):0;
+      ct+=act;ctt+=tgt;
+      card+='<tr><td>'+MO6[i]+'</td><td class="tr">'+fmtN(tgt)+'</td><td class="tr">'+(act>0?fmtN(act):'-')+'</td>'+
+        '<td class="tr">'+(act>0?'<span style="color:'+achC(r)+';font-weight:600;">'+r+'%</span>':'0%')+'</td><td class="tr">'+(act>0?momH(momP(d.sales,i)):'-')+'</td></tr>';
+    }
+    for(let i=6;i<12;i++){
+      card+='<tr style="color:#c7c7cc"><td>'+MO12[i]+'</td><td class="tr">'+fmtN(tgts[i]||0)+'</td><td class="tr">-</td><td class="tr">0%</td><td class="tr">-</td></tr>';
+    }
+    const ctr=pct(ct,ctt);
+    card+='<tr class="total-row"><td>1–6월</td><td class="tr">'+fmtN(ctt)+'</td><td class="tr">'+fmtN(ct)+'</td><td class="tr"><span style="color:'+achC(ctr)+';font-weight:600;">'+ctr+'%</span></td><td class="tr">-</td></tr>';
+    card+='</tbody></table></div></div>';
+    grid.innerHTML+=card;
+  });
+}
+
+let selectedChannel='all';
+let selectedPeriod='total'; // 'total' or 0-5 (월 인덱스)
+let sortKey='qty';
+let sortDir='desc';
+
+const PILL_LIST_CH=[
+  {key:'all',name:'전체',color:'#0066cc'},
+  {key:'coupang',name:'쿠팡',color:'#0066cc'},
+  {key:'naver',name:'네이버',color:'#2f9e44'},
+  {key:'jasa',name:'자사몰',color:'#e64980'},
+  {key:'mk',name:'마더케이',color:'#0891a8'},
+  {key:'kurly',name:'컬리',color:'#0c8599'},
+  {key:'ohouse',name:'오늘의집',color:'#1098ad'},
+  {key:'kakao',name:'카카오',color:'#5c5f66'},
+  {key:'cm29',name:'29CM',color:'#9c36b5'},
+];
+
+function buildChannelPills(){
+  const pillsEl=document.getElementById('prod-ch-pills');
+  pillsEl.innerHTML='';
+  PILL_LIST_CH.forEach(ch=>{
+    const el=document.createElement('div');
+    el.className='ch-pill';
+    el.textContent=ch.name;
+    el.onclick=()=>{selectedChannel=ch.key;buildChannelPills();renderProdTable();};
+    if(ch.key===selectedChannel){el.style.color=ch.color;el.style.borderColor=ch.color;el.style.background=ch.color+'14';el.style.fontWeight='600';}
+    pillsEl.appendChild(el);
+  });
+}
+
+function buildMonthSeg(){
+  const segEl=document.getElementById('month-seg');
+  segEl.innerHTML='';
+  const totalBtn=document.createElement('div');
+  totalBtn.className='seg-btn'+(selectedPeriod==='total'?' on':'');
+  totalBtn.textContent='전체 누적';
+  totalBtn.onclick=()=>{selectedPeriod='total';buildMonthSeg();renderProdTable();};
+  segEl.appendChild(totalBtn);
+  MO6.forEach((m,i)=>{
+    const btn=document.createElement('div');
+    btn.className='seg-btn'+(selectedPeriod===i?' on':'');
+    btn.textContent=m;
+    btn.onclick=()=>{selectedPeriod=i;buildMonthSeg();renderProdTable();};
+    segEl.appendChild(btn);
+  });
+}
+
+function setSort(key){
+  if(sortKey===key){sortDir=sortDir==='desc'?'asc':'desc';}
+  else {sortKey=key; sortDir='desc';}
+  renderProdTable();
+}
+
+function renderProdTable(){
+  const data=PD[selectedChannel]||PD.all;
+  let rows;
+  const chObj=PILL_LIST_CH.find(c=>c.key===selectedChannel);
+  const chName=chObj?chObj.name:'전체';
+
+  if(selectedPeriod==='total'){
+    rows=Object.keys(data.qty).map(name=>{
+      const qarr=data.qty[name]||Array(6).fill(0);
+      const sarr=data.sales[name]||Array(6).fill(0);
+      return {name,qty:qarr.reduce((a,b)=>a+b,0),sales:sarr.reduce((a,b)=>a+b,0)};
+    }).filter(r=>r.qty>0||r.sales>0);
+    var titleText=chName+' 채널 · 1–6월 누적';
+  } else {
+    rows=Object.keys(data.qty).map(name=>({
+      name,
+      qty:(data.qty[name]||[])[selectedPeriod]||0,
+      sales:(data.sales[name]||[])[selectedPeriod]||0
+    })).filter(r=>r.qty>0||r.sales>0);
+    var titleText=chName+' 채널 · '+MO6[selectedPeriod]+' 판매 현황';
+  }
+
+  rows.sort((a,b)=> sortDir==='desc' ? b[sortKey]-a[sortKey] : a[sortKey]-b[sortKey]);
+  document.getElementById('prod-title').textContent=titleText;
+  const arrowQty = sortKey==='qty' ? '<span class="sort-arrow">'+(sortDir==='desc'?'▼':'▲')+'</span>' : '';
+  const arrowSales = sortKey==='sales' ? '<span class="sort-arrow">'+(sortDir==='desc'?'▼':'▲')+'</span>' : '';
+  let h='<thead><tr>'+
+    '<th class="tc" style="width:36px;">순위</th>'+
+    '<th class="hl" style="min-width:200px;">품목명</th>'+
+    '<th class="tr sortable'+(sortKey==='qty'?' sort-active':'')+'" onclick="setSort(\'qty\')">판매수량'+arrowQty+'</th>'+
+    '<th class="tr sortable'+(sortKey==='sales'?' sort-active':'')+'" onclick="setSort(\'sales\')">매출'+arrowSales+'</th>'+
+    '<th class="tr">비중</th>'+
+    '</tr></thead><tbody>';
+  if(rows.length===0){
+    h+='<tr><td colspan="5" class="tc" style="padding:24px;color:var(--ink-muted-48);">해당 채널·기간에 판매 데이터가 없습니다</td></tr>';
+  }
+  const totalForShare=rows.reduce((s,r)=>s+r[sortKey],0);
+  rows.forEach((row,ri)=>{
+    const share=totalForShare>0?(row[sortKey]/totalForShare*100).toFixed(1):'0.0';
+    h+='<tr>'+
+      '<td class="tc"><span class="rank '+(ri===0?'r1':ri===1?'r2':ri===2?'r3':'rn')+'">'+(ri+1)+'</span></td>'+
+      '<td class="hl">'+row.name+'</td>'+
+      '<td class="tr" style="'+(sortKey==='qty'?'font-weight:600;color:var(--ink);':'')+'">'+fmtN(row.qty)+'</td>'+
+      '<td class="tr" style="'+(sortKey==='sales'?'font-weight:600;color:var(--ink);':'')+'">'+fmtN(row.sales)+'</td>'+
+      '<td class="tr">'+share+'%</td>'+
+      '</tr>';
+  });
+  h+='</tbody>';
+  document.getElementById('prod-htbl').innerHTML=h;
+}
+
+function buildS4(){buildChannelPills();buildMonthSeg();renderProdTable();}
+
+window.addEventListener('scroll',()=>{
+  const navs=document.querySelectorAll('.tnav');
+  let cur='s1';
+  ['s1','s2','s3','s4'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&el.getBoundingClientRect().top<=70) cur=id;
+  });
+  navs.forEach(n=>n.classList.toggle('on',n.getAttribute('href')==='#'+cur));
+},{passive:true});
+
+loadAndRender();
+</script>
+</div><!-- #app -->
+</body>
+</html>

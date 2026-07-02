@@ -114,6 +114,7 @@ tr:hover td{background:rgba(0,102,204,0.025);}
     <a class="tnav" href="#s2">채널별 추이</a>
     <a class="tnav" href="#s3">목표달성률</a>
     <a class="tnav" href="#s4">품목별 현황</a>
+    <a class="tnav" href="#s5">월별 수량</a>
   </nav>
   <div class="badge"><span id="live-dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#c7c7cc;margin-right:6px;vertical-align:middle;"></span><span id="live-text">데이터 로딩 중...</span></div>
 </div>
@@ -184,6 +185,27 @@ tr:hover td{background:rgba(0,102,204,0.025);}
   <div class="card" style="padding:20px 18px;">
     <div class="card-t" id="prod-title">전체 채널 · 1–6월 누적</div>
     <div class="heat-wrap"><table class="htbl" id="prod-htbl"></table></div>
+  </div>
+</section>
+<hr class="divider-section" style="margin:64px 0 0;">
+
+<section class="section" id="s5">
+  <div class="sec-head-row">
+    <div>
+      <div class="sec-eyebrow">PRODUCT MONTHLY QTY</div>
+      <h2>품목별 월별 판매수량</h2>
+    </div>
+  </div>
+  <div class="callout">
+    <strong style="color:var(--ink)">전 채널 합산</strong> 기준 주요 품목의 월별 판매수량입니다. 실시간 RAW 데이터 기반으로 자동 갱신됩니다.
+  </div>
+  <div class="card" style="padding:20px 18px;">
+    <div class="heat-wrap">
+      <table class="htbl" id="qty-monthly-tbl" style="min-width:900px;">
+        <thead id="qty-monthly-head"></thead>
+        <tbody id="qty-monthly-body"></tbody>
+      </table>
+    </div>
   </div>
 </section>
 
@@ -464,7 +486,7 @@ function buildS4(){buildChannelPills();buildMonthSeg();renderProdTable();}
 window.addEventListener('scroll',()=>{
   const navs=document.querySelectorAll('.tnav');
   let cur='s1';
-  ['s1','s2','s3','s4'].forEach(id=>{
+  ['s1','s2','s3','s4','s5'].forEach(id=>{
     const el=document.getElementById(id);
     if(el&&el.getBoundingClientRect().top<=70) cur=id;
   });
@@ -590,6 +612,81 @@ function applyTargets(targets) {
   TARGETS_TOTAL_SUM = TARGETS_TOTAL.reduce((a,b)=>a+b,0);
 }
 
+
+// ═══════════════════════════════════════════════
+// S5: 품목별 월별 판매수량 테이블
+// ═══════════════════════════════════════════════
+const QTY_PRODUCTS = [
+  '다목적 비니거 세정티슈',
+  '다목적 비니거 세정티슈 (리필형)',
+  '커피머신 클리너',
+  '텀블러 발포 세정제',
+  '착붙 차량용 쓰레기봉투',
+  '욕실청소세제 500ml',
+  '스탠딩 지퍼백 200매 (S,M,L 혼합형)',
+  '스탠딩지퍼백 Basic',
+  '슬라이딩 지퍼백 4종 멀티팩',
+  '슬라이딩 지퍼백 Medium',
+  '슬라이딩 지퍼백 Large',
+];
+
+function buildS5() {
+  const thead = document.getElementById('qty-monthly-head');
+  const tbody = document.getElementById('qty-monthly-body');
+  if (!thead || !tbody) return;
+
+  // 헤더 행
+  let h = '<tr><th class="hl" style="min-width:220px;font-size:11px;">품목명</th>';
+  MO12.forEach((m, i) => {
+    const isFuture = (totalSales[i] || 0) === 0;
+    h += '<th class="tr" style="font-size:11px;' + (isFuture ? 'color:#c7c7cc;' : '') + '">' + m + '</th>';
+  });
+  h += '<th class="tr" style="font-size:11px;">누계</th></tr>';
+  thead.innerHTML = h;
+
+  // 데이터 행
+  let rows = '';
+  QTY_PRODUCTS.forEach((prod, pi) => {
+    // PD.all.qty에서 품목 찾기 (부분 매칭)
+    const qtyArr = findProductQty(prod);
+    const total = qtyArr.reduce((a, b) => a + b, 0);
+    const maxVal = Math.max(...qtyArr.filter(v => v > 0));
+
+    rows += '<tr>';
+    rows += '<td class="hl" style="font-size:12px;">' + prod + '</td>';
+    MO12.forEach((m, i) => {
+      const v = qtyArr[i] || 0;
+      const isFuture = (totalSales[i] || 0) === 0;
+      const intensity = (maxVal > 0 && v > 0) ? Math.round((v / maxVal) * 100) : 0;
+      let bg = '';
+      if (!isFuture && v > 0) {
+        // 히트맵: 연파랑 → 진파랑
+        const alpha = 0.08 + (intensity / 100) * 0.72;
+        bg = 'background:rgba(0,102,204,' + alpha.toFixed(2) + ');color:' + (intensity > 50 ? '#fff' : 'var(--ink)') + ';font-weight:600;';
+      }
+      if (isFuture) bg = 'color:#c7c7cc;';
+      rows += '<td class="tr" style="font-size:12px;' + bg + '">' + (v > 0 ? fmtN(v) : (isFuture ? '-' : '0')) + '</td>';
+    });
+    rows += '<td class="tr" style="font-size:12px;font-weight:700;color:var(--primary);">' + (total > 0 ? fmtN(total) : '-') + '</td>';
+    rows += '</tr>';
+  });
+  tbody.innerHTML = rows;
+}
+
+function findProductQty(targetName) {
+  if (!PD || !PD.all || !PD.all.qty) return Array(12).fill(0);
+  const result = Array(12).fill(0);
+  // 정확히 일치하거나 포함되는 키 찾기
+  Object.entries(PD.all.qty).forEach(([key, arr]) => {
+    const k = key.toLowerCase().replace(/\s+/g, '');
+    const t = targetName.toLowerCase().replace(/\s+/g, '');
+    if (k === t || k.includes(t) || t.includes(k)) {
+      arr.forEach((v, i) => { result[i] += (v || 0); });
+    }
+  });
+  return result;
+}
+
 async function loadAndRender() {
   const overlay = document.getElementById('loading-overlay');
   const errOverlay = document.getElementById('error-overlay');
@@ -626,6 +723,7 @@ async function loadAndRender() {
     buildS2();
     buildS3();
     buildS4();
+    buildS5();
   }
 }
 

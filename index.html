@@ -335,7 +335,7 @@ function buildS2(){
 
 function buildS3(){
   const tbl=document.getElementById('tbl-total');
-  let h='<thead><tr><th>월별</th><th class="tr">2025년 매출</th><th class="tr">목표매출</th><th class="tr">매출실적</th><th class="tr">달성율</th><th class="tr">MOM</th><th class="tr">YOY</th></tr></thead><tbody>';
+  let h='<thead><tr><th>월별</th><th class="tr">2025년 매출</th><th class="tr">목표매출</th><th class="tr">매출실적</th><th class="tr">마케팅비</th><th class="tr">달성율</th><th class="tr">MOM</th><th class="tr">YOY</th><th class="tr">마케팅비중</th></tr></thead><tbody>';
   let tot=0;
   for(let i=0;i<12;i++){
     const tgt=TARGETS_TOTAL[i]||200000000,act=totalSales[i]||0,r=act>0?pct(act,tgt):0;
@@ -343,15 +343,21 @@ function buildS3(){
     const y25=sales2025[i]||0;
     const yoy=(act>0&&y25>0)?Math.round((act-y25)/y25*100):null;
     tot+=act;
+    const mkt=mktTotal[i]||0;
+    const mktRatio=(act>0&&mkt>0)?Math.round(mkt/act*100):0;
     h+='<tr'+(i<6?'':' style="color:#c7c7cc"')+'><td>'+MO12[i]+'</td>'+
       '<td class="tr" style="color:var(--ink-muted-48);">'+fmtN(y25)+'</td>'+
       '<td class="tr">'+fmtN(tgt)+'</td><td class="tr">'+(act>0?fmtN(act):'-')+'</td>'+
+      '<td class="tr" style="color:var(--c-mkt);">'+(mkt>0?fmtN(mkt):'-')+'</td>'+
       '<td class="tr">'+(act>0?'<span style="color:'+achC(r)+';font-weight:600;">'+r+'%</span>':'0%')+'</td>'+
-      '<td class="tr">'+(act>0?momH(mom):'-')+'</td><td class="tr">'+(act>0?yoyH(yoy):'-')+'</td></tr>';
+      '<td class="tr">'+(act>0?momH(mom):'-')+'</td><td class="tr">'+(act>0?yoyH(yoy):'-')+'</td>'+
+      '<td class="tr"><span style="font-weight:600;color:'+(mktRatio>30?'var(--red)':mktRatio>20?'var(--orange)':'var(--green)')+';">'+mktRatio+'%</span></td></tr>';
   }
   const tr=pct(tot,2400000000);
   const sum25=sales2025.reduce((a,b)=>a+b,0);
-  h+='<tr class="total-row"><td>total</td><td class="tr">'+fmtN(sum25)+'</td><td class="tr">'+fmtN(TARGETS_TOTAL_SUM)+'</td><td class="tr">'+fmtN(tot)+'</td><td class="tr"><span style="color:'+achC(tr)+';font-weight:600;">'+tr+'%</span></td><td class="tr">-</td><td class="tr">-</td></tr>';
+    const totMkt=mktTotal.slice(0,6).reduce((a,b)=>a+b,0);
+  const totMktRatio=(tot>0&&totMkt>0)?Math.round(totMkt/tot*100):0;
+  h+='<tr class="total-row"><td>total</td><td class="tr">'+fmtN(sum25)+'</td><td class="tr">'+fmtN(TARGETS_TOTAL_SUM)+'</td><td class="tr">'+fmtN(tot)+'</td><td class="tr" style="color:var(--c-mkt);">'+fmtN(totMkt)+'</td><td class="tr"><span style="color:'+achC(tr)+';font-weight:600;">'+tr+'%</span></td><td class="tr">-</td><td class="tr">-</td><td class="tr"><span style="font-weight:700;color:'+(totMktRatio>30?'var(--red)':totMktRatio>20?'var(--orange)':'var(--green)')+';">'+totMktRatio+'%</span></td></tr>';
   h+='</tbody>';tbl.innerHTML=h;
 
   const grid=document.getElementById('ch-tbl-grid');

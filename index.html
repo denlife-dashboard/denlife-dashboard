@@ -338,18 +338,16 @@ function buildS3(){
     const tgts=d.tgt.concat(Array(6).fill(d.tgt[d.tgt.length-1]||0));
     let card='<div class="card"><div class="card-t" style="color:'+d.color+'"><span style="display:inline-block;width:7px;height:7px;border-radius:9999px;background:'+d.color+';margin-right:5px;"></span>'+d.name+'</div>'+
       '<div class="tbl-wrap"><table style="font-size:11px;"><thead><tr><th>월</th><th class="tr">목표</th><th class="tr">실적</th><th class="tr">달성</th><th class="tr">MOM</th></tr></thead><tbody>';
-    let ct=0,ctt=0;
-    for(let i=0;i<6;i++){
+    let ct=0,ctt=0,lastAct=0;
+    for(let i=0;i<12;i++){
       const tgt=tgts[i]||0,act=d.sales[i]||0,r=act>0?pct(act,tgt):0;
-      ct+=act;ctt+=tgt;
-      card+='<tr><td>'+MO6[i]+'</td><td class="tr">'+fmtN(tgt)+'</td><td class="tr">'+(act>0?fmtN(act):'-')+'</td>'+
-        '<td class="tr">'+(act>0?'<span style="color:'+achC(r)+';font-weight:600;">'+r+'%</span>':'0%')+'</td><td class="tr">'+(act>0?momH(momP(d.sales,i)):'-')+'</td></tr>';
-    }
-    for(let i=6;i<12;i++){
-      card+='<tr style="color:#c7c7cc"><td>'+MO12[i]+'</td><td class="tr">'+fmtN(tgts[i]||0)+'</td><td class="tr">-</td><td class="tr">0%</td><td class="tr">-</td></tr>';
+      const has=act>0;
+      if(has){ct+=act;ctt+=tgt;lastAct=i+1;}
+      card+='<tr'+(has?'':' style="color:#c7c7cc"')+'><td>'+MO12[i]+'</td><td class="tr">'+fmtN(tgt)+'</td><td class="tr">'+(has?fmtN(act):'-')+'</td>'+
+        '<td class="tr">'+(has?'<span style="color:'+achC(r)+';font-weight:600;">'+r+'%</span>':'0%')+'</td><td class="tr">'+(has?momH(momP(d.sales,i)):'-')+'</td></tr>';
     }
     const ctr=pct(ct,ctt);
-    card+='<tr class="total-row"><td>1–6월</td><td class="tr">'+fmtN(ctt)+'</td><td class="tr">'+fmtN(ct)+'</td><td class="tr"><span style="color:'+achC(ctr)+';font-weight:600;">'+ctr+'%</span></td><td class="tr">-</td></tr>';
+    card+='<tr class="total-row"><td>1–'+lastAct+'월</td><td class="tr">'+fmtN(ctt)+'</td><td class="tr">'+fmtN(ct)+'</td><td class="tr"><span style="color:'+achC(ctr)+';font-weight:600;">'+ctr+'%</span></td><td class="tr">-</td></tr>';
     card+='</tbody></table></div></div>';
     grid.innerHTML+=card;
   });

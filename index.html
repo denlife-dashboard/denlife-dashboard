@@ -36,6 +36,9 @@ body{background:var(--canvas);color:var(--ink);font-family:'Inter',system-ui,-ap
 .sec-head-row h2{font-size:30px;font-weight:600;letter-spacing:-0.374px;color:var(--ink);}
 .sec-eyebrow{font-size:14px;font-weight:600;letter-spacing:0.231px;color:var(--primary);text-transform:uppercase;}
 .card{background:var(--canvas);border:1px solid var(--hairline);border-radius:18px;padding:24px;}
+.ch-goal-tbl th,.ch-goal-tbl td{padding:8px 6px;}
+.ch-goal-tbl th:first-child,.ch-goal-tbl td:first-child{padding-left:0;padding-right:2px;}
+.ch-goal-tbl th:nth-child(2),.ch-goal-tbl td:nth-child(2){padding-left:2px;}
 .section.tile-parchment .card{background:var(--canvas);}
 .card-t{font-size:14px;font-weight:600;color:var(--ink-muted-48);letter-spacing:0.2px;margin-bottom:16px;display:flex;align-items:center;gap:6px;}
 .kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px;}
@@ -343,11 +346,16 @@ function buildS3(){
   h+='</tbody>';tbl.innerHTML=h;
 
   const grid=document.getElementById('ch-tbl-grid');
+  const mktCell=(mkt,roas)=>{
+    const line1=mkt>0?fmtN(mkt):'-';
+    const line2=roas!=null?'('+roas+'%)':'\u00A0';
+    return '<div style="line-height:1.25;">'+line1+'<div style="font-size:9px;color:var(--orange);font-weight:600;">'+line2+'</div></div>';
+  };
   ['coupang','naver','jasa','mk','kurly','ohouse','kakao','cm29','etc'].forEach(ck=>{
     const d=CD[ck];
     const tgts=d.tgt.concat(Array(6).fill(d.tgt[d.tgt.length-1]||0));
     let card='<div class="card"><div class="card-t" style="color:'+d.color+'"><span style="display:inline-block;width:7px;height:7px;border-radius:9999px;background:'+d.color+';margin-right:5px;"></span>'+d.name+'</div>'+
-      '<div class="tbl-wrap"><table style="font-size:12px;"><thead><tr><th>월</th><th class="tr">목표</th><th class="tr">실적</th><th class="tr">마케팅비</th><th class="tr">달성</th><th class="tr">MOM</th></tr></thead><tbody>';
+      '<div class="tbl-wrap"><table class="ch-goal-tbl" style="font-size:12px;"><thead><tr><th>월</th><th class="tr">목표</th><th class="tr">실적</th><th class="tr">마케팅비</th><th class="tr">달성</th><th class="tr">MOM</th></tr></thead><tbody>';
     let ct=0,ctt=0,cmk=0,lastAct=0;
     for(let i=0;i<12;i++){
       const tgt=tgts[i]||0,act=d.sales[i]||0,r=act>0?pct(act,tgt):0;
@@ -356,13 +364,13 @@ function buildS3(){
       const has=act>0;
       if(has){ct+=act;ctt+=tgt;cmk+=mkt;lastAct=i+1;}
       card+='<tr'+(has?'':' style="color:#c7c7cc"')+'><td>'+MO12[i]+'</td><td class="tr">'+fmtN(tgt)+'</td><td class="tr">'+(has?fmtN(act):'-')+'</td>'+
-        '<td class="tr">'+(mkt>0?fmtN(mkt)+(roas!=null?'<span style="color:var(--orange);font-weight:600;">('+roas+'%)</span>':''):'-')+'</td>'+
+        '<td class="tr">'+mktCell(mkt,roas)+'</td>'+
         '<td class="tr">'+(has?'<span style="color:'+achC(r)+';font-weight:600;">'+r+'%</span>':'0%')+'</td><td class="tr">'+(has?momH(momP(d.sales,i)):'-')+'</td></tr>';
     }
     const ctr=pct(ct,ctt);
     const totRoas=(ct>0&&cmk>0)?Math.round(ct/cmk*100):null;
     card+='<tr class="total-row"><td>1–'+lastAct+'월</td><td class="tr">'+fmtN(ctt)+'</td><td class="tr">'+fmtN(ct)+'</td>'+
-      '<td class="tr">'+(cmk>0?fmtN(cmk)+(totRoas!=null?' <span style="color:var(--orange);font-weight:600;">('+totRoas+'%)</span>':''):'-')+'</td>'+
+      '<td class="tr">'+mktCell(cmk,totRoas)+'</td>'+
       '<td class="tr"><span style="color:'+achC(ctr)+';font-weight:600;">'+ctr+'%</span></td><td class="tr">-</td></tr>';
     card+='</tbody></table></div></div>';
     grid.innerHTML+=card;

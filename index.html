@@ -29,8 +29,8 @@ body{background:var(--canvas);color:var(--ink);font-family:'Inter',system-ui,-ap
 .tnav:hover{color:var(--ink);}
 .tnav.on{color:var(--primary);background:rgba(0,102,204,0.08);font-weight:600;}
 .badge{background:var(--canvas);border:1px solid var(--hairline);border-radius:9999px;padding:6px 14px;font-size:13px;color:var(--ink-muted-48);white-space:nowrap;flex-shrink:0;}
-.section{padding:64px 32px 0;}
-.section:last-child{padding-bottom:96px;}
+.section{padding:64px 32px 32px;}
+.section:last-of-type{padding-bottom:64px;}
 .section.tile-parchment{background:var(--canvas-parchment);box-sizing:border-box;}
 .sec-head-row{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:28px;}
 .sec-head-row h2{font-size:30px;font-weight:600;letter-spacing:-0.374px;color:var(--ink);}
@@ -337,17 +337,23 @@ function buildS3(){
     const d=CD[ck];
     const tgts=d.tgt.concat(Array(6).fill(d.tgt[d.tgt.length-1]||0));
     let card='<div class="card"><div class="card-t" style="color:'+d.color+'"><span style="display:inline-block;width:7px;height:7px;border-radius:9999px;background:'+d.color+';margin-right:5px;"></span>'+d.name+'</div>'+
-      '<div class="tbl-wrap"><table style="font-size:11px;"><thead><tr><th>월</th><th class="tr">목표</th><th class="tr">실적</th><th class="tr">달성</th><th class="tr">MOM</th></tr></thead><tbody>';
-    let ct=0,ctt=0,lastAct=0;
+      '<div class="tbl-wrap"><table style="font-size:12px;"><thead><tr><th>월</th><th class="tr">목표</th><th class="tr">실적</th><th class="tr">마케팅비</th><th class="tr">달성</th><th class="tr">MOM</th></tr></thead><tbody>';
+    let ct=0,ctt=0,cmk=0,lastAct=0;
     for(let i=0;i<12;i++){
       const tgt=tgts[i]||0,act=d.sales[i]||0,r=act>0?pct(act,tgt):0;
+      const mkt=(d.mkt&&d.mkt[i])||0;
+      const roas=(act>0&&mkt>0)?Math.round(act/mkt*100):null;
       const has=act>0;
-      if(has){ct+=act;ctt+=tgt;lastAct=i+1;}
+      if(has){ct+=act;ctt+=tgt;cmk+=mkt;lastAct=i+1;}
       card+='<tr'+(has?'':' style="color:#c7c7cc"')+'><td>'+MO12[i]+'</td><td class="tr">'+fmtN(tgt)+'</td><td class="tr">'+(has?fmtN(act):'-')+'</td>'+
+        '<td class="tr">'+(mkt>0?fmtN(mkt)+(roas!=null?'<span style="color:var(--orange);font-weight:600;">('+roas+'%)</span>':''):'-')+'</td>'+
         '<td class="tr">'+(has?'<span style="color:'+achC(r)+';font-weight:600;">'+r+'%</span>':'0%')+'</td><td class="tr">'+(has?momH(momP(d.sales,i)):'-')+'</td></tr>';
     }
     const ctr=pct(ct,ctt);
-    card+='<tr class="total-row"><td>1–'+lastAct+'월</td><td class="tr">'+fmtN(ctt)+'</td><td class="tr">'+fmtN(ct)+'</td><td class="tr"><span style="color:'+achC(ctr)+';font-weight:600;">'+ctr+'%</span></td><td class="tr">-</td></tr>';
+    const totRoas=(ct>0&&cmk>0)?Math.round(ct/cmk*100):null;
+    card+='<tr class="total-row"><td>1–'+lastAct+'월</td><td class="tr">'+fmtN(ctt)+'</td><td class="tr">'+fmtN(ct)+'</td>'+
+      '<td class="tr">'+(cmk>0?fmtN(cmk)+(totRoas!=null?' <span style="color:var(--orange);font-weight:600;">('+totRoas+'%)</span>':''):'-')+'</td>'+
+      '<td class="tr"><span style="color:'+achC(ctr)+';font-weight:600;">'+ctr+'%</span></td><td class="tr">-</td></tr>';
     card+='</tbody></table></div></div>';
     grid.innerHTML+=card;
   });
@@ -520,6 +526,32 @@ function parseMultiPack(rawName) {
   return { base: name, mult: 1 };
 }
 
+// 집계 제외 품목 (판매수량표에서 완전히 제외)
+const EXCLUDED_PRODUCTS = new Set([
+  '[선물박스포함] 덴라이프 주방 실속템 3종 선물세트',
+  '[선물하기] 허긴 신생아 유산균샤워 190ml 2개+허긴 크림 200ml+허긴 오일100ml 선물세트',
+  '[선물하기]허긴 신생아 유산균샤워 190ml 4개 선물세트',
+  '[선물하기] 허긴 로션 200ml 2개+허긴 크림 200ml+허긴 오일100ml 선물세트'
+]);
+
+// 동일 품목의 변형 표기를 하나의 대표 품목명으로 병합 (공백/괄호 등 표기 차이에 안전하도록 키워드 기반 매칭)
+const MERGE_RULES = [
+  { test: /텀블러\s*발포\s*세정제/, name: '텀블러 발포 세정제' },
+  { test: /세탁조\s*클리너/, name: '세탁조클리너' },
+  { test: /욕실청소세제\s*500\s*ml/i, name: '욕실청소세제 500ml' },
+  { test: /육수저장팩\s*700/, name: '육수저장팩 700' },
+  { test: /일회용\s*도마/, name: '일회용 도마' },
+  { test: /착붙\s*차량용\s*쓰레기봉투/, name: '착붙 차량용 쓰레기봉투' },
+  { test: /슬라이딩\s*롱\s*지퍼백/, name: '슬라이딩 롱 지퍼백' },
+  { test: /다목적\s*비니거\s*세정티슈.*리필형/, name: '다목적 비니거 세정티슈 (리필형)' },
+  { test: /다목적\s*비니거\s*세정티슈/, name: '다목적 비니거 세정티슈' },
+  { test: /원데이\s*버블\s*일회용\s*수세미/, name: '원데이 버블 일회용 수세미' },
+];
+function resolveProdName(rawProd, base) {
+  for (const r of MERGE_RULES) { if (r.test.test(rawProd) || r.test.test(base)) return r.name; }
+  return base;
+}
+
 function addToPD(store, prod, mIdx, qty, sales) {
   if (!store.qty[prod]) { store.qty[prod]=Array(12).fill(0); store.sales[prod]=Array(12).fill(0); }
   store.qty[prod][mIdx] += qty;
@@ -533,8 +565,10 @@ function applyItemSales(rows) {
     const ch = mapChannelLive(row['거래처명']);
     const mIdx = parseMonthIdx(row['판매월']);
     if (mIdx === null) return;
-    const rawProd = String(row['품목명']||'');
-    const { base: prod, mult } = parseMultiPack(rawProd);
+    const rawProd = String(row['품목명']||'').trim();
+    if (EXCLUDED_PRODUCTS.has(rawProd)) return;
+    const { base, mult } = parseMultiPack(rawProd);
+    const prod = resolveProdName(rawProd, base);
     const qty = (Number(row['수량합계'])||0) * mult;  // 수량 × 배수
     const sales = Number(row['매출합계'])||0;          // 매출은 그대로
     addToPD(PD[ch], prod, mIdx, qty, sales);

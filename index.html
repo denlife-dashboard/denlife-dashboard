@@ -127,7 +127,7 @@ tr:hover td{background:rgba(0,102,204,0.025);}
   <div class="g2">
     <div class="card">
       <div class="card-t">월별 총매출 + 마케팅비용</div>
-      <div class="cw" style="height:280px"><canvas id="c-main"></canvas></div>
+      <div class="cw" style="height:340px"><canvas id="c-main"></canvas></div>
       <div class="legend">
         <span><div class="lsamp" style="background:var(--primary)"></div>2026 총매출</span>
         <span><div class="lsamp" style="background:var(--c-mkt)"></div>총 광고비 (소진내용)</span>
@@ -136,7 +136,7 @@ tr:hover td{background:rgba(0,102,204,0.025);}
     </div>
     <div class="card">
       <div class="card-t">채널별 매출 비중 (월별, 100% 기준)</div>
-      <div class="cw" style="height:280px"><canvas id="c-stack"></canvas></div>
+      <div class="cw" style="height:340px"><canvas id="c-stack"></canvas></div>
       <div class="legend">
         <span><div class="dot" style="background:var(--c-coupang)"></div>쿠팡</span>
         <span><div class="dot" style="background:var(--c-jasanaver)"></div>자사몰+네이버</span>
@@ -219,6 +219,17 @@ let PD={
 };
 
 const fmtN=n=>n||n===0?Math.round(n).toLocaleString('ko-KR'):'-';
+// 세로축 눈금용 축약 표기 (억→천만→백만→만 순으로 가장 짧은 단위 사용)
+const fmtAxis=v=>{
+  if(v===0) return '0';
+  const sign=v<0?'-':'', av=Math.abs(v);
+  const fmt=(n,unit)=>sign+(Number.isInteger(n)?n:Math.round(n*10)/10)+unit;
+  if(av>=100000000) return fmt(av/100000000,'억');
+  if(av>=10000000) return fmt(av/10000000,'천');
+  if(av>=1000000) return fmt(av/1000000,'백');
+  if(av>=10000) return fmt(av/10000,'');
+  return v.toLocaleString();
+};
 const pct=(a,b)=>b?Math.round(a/b*100):0;
 const achC=r=>r>=100?'#0066cc':'#e03131';
 const momP=(a,i)=>(!i||!a[i-1])?null:Math.round((a[i]-a[i-1])/a[i-1]*100);
@@ -256,23 +267,24 @@ function buildKPI(){
 }
 
 function buildS1(){
+  const n=activeMonths();
   new Chart(document.getElementById('c-main'),{
     type:'bar',
     data:{labels:MO12,datasets:[
-      {label:'총매출',data:totalSales,backgroundColor:totalSales.map((_,i)=>i<6?'rgba(0,102,204,0.85)':'rgba(0,102,204,0.1)'),borderRadius:4,order:2},
+      {label:'총매출',data:totalSales,backgroundColor:totalSales.map((v,i)=>(i<n&&v>0)?'rgba(0,102,204,0.85)':'rgba(0,102,204,0.1)'),borderRadius:4,order:2,clip:false},
       {label:'광고비',data:mktTotal,backgroundColor:'rgba(232,89,12,0.78)',borderRadius:4,order:2},
       {label:'2025',data:sales2025,type:'line',borderColor:'#c7c7cc',borderDash:[4,4],borderWidth:1.5,pointRadius:0,fill:false,tension:.3,order:1}
     ]},
     options:{responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:22}},
       plugins:{legend:{display:false},tooltip:{backgroundColor:'#1d1d1f',padding:10,cornerRadius:8,filter:c=>c.dataset.label!=='2025',callbacks:{label:c=>c.dataset.label+': '+fmtN(c.raw)}}},
-      scales:{y:{grid:{color:'#f0f0f0'},ticks:{callback:v=>v.toLocaleString()}},x:{grid:{display:false}}}}
+      scales:{y:{min:0,max:200000000,grid:{color:'#f0f0f0'},ticks:{stepSize:20000000,callback:v=>fmtAxis(v)}},x:{grid:{display:false}}}}
   });
-  const n=activeMonths();
-  const monLabels=MO12.slice(0,n);
+  const monLabels=MO12;
+  const cp=monLabels.map((_,i)=>CD.coupang.sales[i]||0);
+  const mk=monLabels.map((_,i)=>CD.mk.sales[i]||0);
   const jn=monLabels.map((_,i)=>(CD.jasa.sales[i]||0)+(CD.naver.sales[i]||0));
-  const cp=CD.coupang.sales.slice(0,n).map(v=>v||0);
-  const mk=CD.mk.sales.slice(0,n).map(v=>v||0);
-  const et=totalSales.slice(0,n).map((t,i)=>Math.max(0,t-cp[i]-jn[i]-mk[i]));
+  const et=totalSales.map((t,i)=>Math.max(0,t-cp[i]-jn[i]-mk[i]));
   const pctOf=(arr,i,tot)=>tot[i]>0?arr[i]/tot[i]*100:0;
   new Chart(document.getElementById('c-stack'),{
     type:'bar',
@@ -289,6 +301,43 @@ function buildS1(){
 }
 
 const CH_ROWS=[['coupang','naver','jasa'],['mk','kurly','ohouse'],['kakao','cm29','etc']];
+
+// 그룹별 공통 축 기준 (min/max/step 동일하게 맞춰 규모 비교 가능하게)
+const CH_AXIS={
+  coupang:{max:150000000,step:50000000},
+  naver:{max:40000000,step:10000000}, jasa:{max:40000000,step:10000000},
+  mk:{max:40000000,step:20000000},
+  kurly:{max:8000000,step:2000000}, ohouse:{max:6000000,step:2000000},
+  kakao:{max:3000000,step:1000000}, cm29:{max:4000000,step:1000000}, etc:{max:4000000,step:1000000}
+};
+
+// 막대 위에 매출 금액 숫자를 표기하는 플러그인 (매출만, 광고비는 생략)
+const SALES_LABELS=new Set(['2026 매출','총매출']);
+const barLabelPlugin={
+  id:'barLabel',
+  afterDatasetsDraw(chart){
+    const ctx=chart.ctx;
+    ctx.save();
+    ctx.font='400 11px -apple-system,BlinkMacSystemFont,sans-serif';
+    ctx.textAlign='center';
+    const di=chart.data.datasets.findIndex(ds=>SALES_LABELS.has(ds.label));
+    if(di<0){ ctx.restore(); return; }
+    const ds=chart.data.datasets[di];
+    const meta=chart.getDatasetMeta(di);
+    if(!meta.visible){ ctx.restore(); return; }
+    const isArrayColor=Array.isArray(ds.backgroundColor);
+    if(!isArrayColor) ctx.fillStyle=ds.backgroundColor.replace(/cc$/,'');
+    meta.data.forEach((bar,i)=>{
+      const v=ds.data[i];
+      if(v==null) return;
+      if(isArrayColor) ctx.fillStyle='#0066cc';
+      ctx.fillText(fmtN(v),bar.x,Math.max(bar.y-4,10));
+    });
+    ctx.restore();
+  }
+};
+Chart.register(barLabelPlugin);
+
 function buildS2(){
   CH_ROWS.forEach((row,ri)=>{
     const grid=document.getElementById('cg'+(ri+1));
@@ -297,21 +346,23 @@ function buildS2(){
       const div=document.createElement('div');
       div.className='card';
       const cid='cc-'+ck;
-      div.innerHTML='<div class="card-t"><span style="display:inline-block;width:7px;height:7px;border-radius:9999px;background:'+d.color+';margin-right:5px;"></span>'+d.name+'</div><div class="cw" style="height:170px"><canvas id="'+cid+'"></canvas></div>';
+      div.innerHTML='<div class="card-t"><span style="display:inline-block;width:7px;height:7px;border-radius:9999px;background:'+d.color+';margin-right:5px;"></span>'+d.name+'</div><div class="cw" style="height:260px;overflow:visible"><canvas id="'+cid+'"></canvas></div>';
       grid.appendChild(div);
       setTimeout(()=>{
         const sales12 = d.sales.concat(Array(12-d.sales.length).fill(null));
         const mkt12 = d.mkt.concat(Array(12-d.mkt.length).fill(null));
+        const axis=CH_AXIS[ck];
         new Chart(document.getElementById(cid),{
           type:'bar',
           data:{labels:MO12,datasets:[
-            {label:'2026 매출',data:sales12,backgroundColor:d.color+'cc',borderRadius:3,order:2},
-            {label:'광고비',data:mkt12,backgroundColor:'rgba(232,89,12,0.7)',borderRadius:3,order:2},
+            {label:'2026 매출',data:sales12,backgroundColor:d.color+'cc',borderRadius:3,order:2,clip:false},
+            {label:'광고비',data:mkt12,backgroundColor:'rgba(232,89,12,0.7)',borderRadius:3,order:2,clip:false},
             {label:'2025 매출',data:d.s25,type:'line',borderColor:'#c7c7cc',borderDash:[4,4],borderWidth:1.3,pointRadius:0,fill:false,tension:.3,spanGaps:true,order:1}
           ]},
           options:{responsive:true,maintainAspectRatio:false,
+            layout:{padding:{top:22}},
             plugins:{legend:{display:false},tooltip:{backgroundColor:'#1d1d1f',padding:8,cornerRadius:8,filter:c=>c.dataset.label!=='2025 매출',callbacks:{label:c=>c.dataset.label+': '+fmtN(c.raw)}}},
-            scales:{y:{grid:{color:'#f0f0f0'},ticks:{callback:v=>v.toLocaleString(),maxTicksLimit:4,font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
+            scales:{y:{min:0,max:axis?axis.max:undefined,grid:{color:'#f0f0f0'},ticks:{stepSize:axis?axis.step:undefined,padding:2,callback:v=>fmtAxis(v),maxTicksLimit:axis?undefined:4,font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
         });
       },0);
     });

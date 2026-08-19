@@ -394,7 +394,7 @@ function buildS3(){
   const tr=pct(tot,totTgt);
   const totYoy=(tot>0&&totY25>0)?Math.round((tot-totY25)/totY25*100):null;
   const sum25=sales2025.reduce((a,b)=>a+b,0);
-    const totMkt=mktTotal.slice(0,6).reduce((a,b)=>a+b,0);
+    const totMkt=mktTotal.slice(0,activeMonths()).reduce((a,b)=>a+b,0);
   const totMktRatio=(tot>0&&totMkt>0)?Math.round(totMkt/tot*100):0;
     h+='<tr class="total-row"><td>total</td><td class="tr">'+fmtN(sum25)+'</td><td class="tr">'+fmtN(TARGETS_TOTAL_SUM)+'</td><td class="tr">'+fmtN(tot)+'</td><td class="tr" style="color:var(--c-mkt);">'+fmtN(totMkt)+'</td><td class="tr"><span style="color:'+achC(tr)+';font-weight:600;">'+tr+'%</span></td><td class="tr">-</td><td class="tr">'+(totYoy!=null?yoyH(totYoy):'-')+'</td><td class="tr"><span style="font-weight:700;color:'+(totMktRatio>30?'var(--red)':totMktRatio>20?'var(--orange)':'var(--green)')+';">'+totMktRatio+'%</span></td></tr>';
   h+='</tbody>';tbl.innerHTML=h;

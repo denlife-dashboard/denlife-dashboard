@@ -372,7 +372,7 @@ function buildS2(){
 function buildS3(){
   const tbl=document.getElementById('tbl-total');
   let h='<thead><tr><th>월별</th><th class="tr">2025년 매출</th><th class="tr">목표매출</th><th class="tr">매출실적</th><th class="tr">마케팅비</th><th class="tr">달성율</th><th class="tr">MOM</th><th class="tr">YOY</th><th class="tr">마케팅비중</th></tr></thead><tbody>';
-  let tot=0, totY25=0;
+  let tot=0, totY25=0, totTgt=0;
   for(let i=0;i<12;i++){
     const tgt=TARGETS_TOTAL[i]||200000000,act=totalSales[i]||0,r=act>0?pct(act,tgt):0;
     const mom=momP(totalSales,i);
@@ -380,6 +380,7 @@ function buildS3(){
     const yoy=(act>0&&y25>0)?Math.round((act-y25)/y25*100):null;
     tot+=act;
     if(act>0) totY25+=y25;
+    if(act>0) totTgt+=tgt;
     const mkt=mktTotal[i]||0;
     const mktRatio=(act>0&&mkt>0)?Math.round(mkt/act*100):0;
     h+='<tr'+(i<6?'':' style="color:#c7c7cc"')+'><td>'+MO12[i]+'</td>'+
@@ -390,7 +391,7 @@ function buildS3(){
       '<td class="tr">'+(act>0?momH(mom):'-')+'</td><td class="tr">'+(act>0?yoyH(yoy):'-')+'</td>'+
       '<td class="tr"><span style="font-weight:600;color:'+(mktRatio>30?'var(--red)':mktRatio>20?'var(--orange)':'var(--green)')+';">'+mktRatio+'%</span></td></tr>';
   }
-  const tr=pct(tot,2400000000);
+  const tr=pct(tot,totTgt);
   const totYoy=(tot>0&&totY25>0)?Math.round((tot-totY25)/totY25*100):null;
   const sum25=sales2025.reduce((a,b)=>a+b,0);
     const totMkt=mktTotal.slice(0,6).reduce((a,b)=>a+b,0);

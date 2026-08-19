@@ -260,7 +260,7 @@ function buildKPI(){
   const achRate=pct(sumSales,totalTarget);
   document.getElementById('kpi-row').innerHTML=
     '<div class="kpi"><div class="kpi-lbl">누적 총매출 (1–'+n+'월)</div><div class="kpi-val">'+fmtN(sumSales)+'</div><div class="kpi-sub">목표 '+fmtN(totalTarget)+' 대비</div><div class="chip cd">▼ 달성률 '+achRate+'%</div></div>'+
-    '<div class="kpi"><div class="kpi-lbl">최고 매출월</div><div class="kpi-val">'+fmtN(totalSales[maxIdx])+'<div class="kpi"><div class="kpi-lbl">최고 매출월</div><div class="kpi-val">'+fmtN(totalSales[maxIdx])+'</div><div class="kpi-sub">달성률 '+pct(totalSales[maxIdx],200000000)+'%</div><div class="chip cu">'+MO12[maxIdx]+' '+momH(momP(totalSales,maxIdx))+'</div></div>'+
+       '<div class="kpi"><div class="kpi-lbl">최고 매출월</div><div class="kpi-val">'+fmtN(totalSales[maxIdx])+'</div><div class="kpi-sub">달성률 '+pct(totalSales[maxIdx],200000000)+'%</div><div class="chip cu">'+MO12[maxIdx]+'</div></div>'+
     '<div class="kpi"><div class="kpi-lbl">'+MO12[lastIdx]+' 매출</div><div class="kpi-val">'+fmtN(totalSales[lastIdx])+'</div><div class="kpi-sub">전월 '+fmtN(totalSales[lastIdx-1]||0)+' 대비</div><div class="chip cd">'+momH(momP(totalSales,lastIdx))+'</div></div>'+
     '<div class="kpi"><div class="kpi-lbl">쿠팡 채널 비중</div><div class="kpi-val">'+coupangShare+'%</div><div class="kpi-sub">1–'+n+'월 누적매출 대비</div><div class="chip cb">누적 채널 1위</div></div>'+
     '<div class="kpi"><div class="kpi-lbl">누적 광고비 · 비중</div><div class="kpi-val">'+fmtN(sumMkt)+'</div><div class="kpi-sub">광고비 ÷ 매출 = '+mktRatio+'%</div><div class="chip cp">광고비 비중 '+mktRatio+'%</div></div>';

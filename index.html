@@ -289,13 +289,13 @@ function buildS1(){
   new Chart(document.getElementById('c-stack'),{
     type:'bar',
     data:{labels:monLabels,datasets:[
-      {label:'쿠팡',data:cp.map((v,i)=>pctOf(cp,i,totalSales)),backgroundColor:'rgba(0,102,204,0.85)',borderRadius:0},
-      {label:'자사몰+네이버',data:jn.map((v,i)=>pctOf(jn,i,totalSales)),backgroundColor:'rgba(214,51,108,0.85)',borderRadius:0},
-      {label:'마더케이',data:mk.map((v,i)=>pctOf(mk,i,totalSales)),backgroundColor:'rgba(8,145,168,0.85)',borderRadius:0},
-      {label:'기타',data:et.map((v,i)=>pctOf(et,i,totalSales)),backgroundColor:'rgba(134,142,150,0.55)',borderRadius:0},
+      {label:'쿠팡',data:cp.map((v,i)=>pctOf(cp,i,totalSales)),amounts:cp,backgroundColor:'rgba(0,102,204,0.85)',borderRadius:0},
+      {label:'자사몰+네이버',data:jn.map((v,i)=>pctOf(jn,i,totalSales)),amounts:jn,backgroundColor:'rgba(214,51,108,0.85)',borderRadius:0},
+      {label:'마더케이',data:mk.map((v,i)=>pctOf(mk,i,totalSales)),amounts:mk,backgroundColor:'rgba(8,145,168,0.85)',borderRadius:0},
+      {label:'기타',data:et.map((v,i)=>pctOf(et,i,totalSales)),amounts:et,backgroundColor:'rgba(134,142,150,0.55)',borderRadius:0},
     ]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{backgroundColor:'#1d1d1f',padding:10,cornerRadius:8,callbacks:{label:c=>c.dataset.label+': '+c.raw.toFixed(1)+'%'}}},
+            plugins:{legend:{display:false},tooltip:{backgroundColor:'#1d1d1f',padding:10,cornerRadius:8,callbacks:{label:c=>c.dataset.label+': '+fmtN(c.dataset.amounts[c.dataIndex])+'원'}}},
       scales:{x:{stacked:true,min:0,max:100,grid:{color:'#f0f0f0'},ticks:{callback:v=>v+'%'}},y:{stacked:true,grid:{display:false}}}}
   });
 }
